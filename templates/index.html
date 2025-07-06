@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>掲示板</title>
+<title>シンプル掲示板</title>
 <style>
 /* グラデーションテキストのスタイル */
 .example4 {
@@ -125,8 +125,7 @@ th {
   {% endif %}
 {% endwith %}
 
-<form action="/post" method="POST">
-    <label for="msg"></label>
+<form action="/post" method="POST" id="postForm"> <label for="msg"></label>
     メッセージ <textarea
     name="message"
     rows="6"
@@ -158,6 +157,7 @@ th {
 
 <h2>投稿</h2>
 <h3>現在の話題：<font color="red">{{ current_topic }}</font></h3>
+
 <table border="1">
     <tbody>
         <tr>
@@ -178,6 +178,37 @@ th {
         {% endfor %}
     </tbody>
 </table>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const nameInput = document.getElementById('name');
+        const seedInput = document.getElementById('seed');
+        const postForm = document.getElementById('postForm');
+
+        // ページ読み込み時にLocalStorageから値を読み込む
+        // prev_name/prev_seedがJinja2によって既に設定されている場合はそちらを優先
+        // (サーバーサイドでのエラーリダイレクト時)
+        if (!nameInput.value) { // prev_nameが空の場合のみLocalStorageを試す
+            const savedName = localStorage.getItem('savedName');
+            if (savedName) {
+                nameInput.value = savedName;
+            }
+        }
+        if (!seedInput.value) { // prev_seedが空の場合のみLocalStorageを試す
+            const savedSeed = localStorage.getItem('savedSeed');
+            if (savedSeed) {
+                seedInput.value = savedSeed;
+            }
+        }
+
+        // フォーム送信時にLocalStorageに値を保存する
+        postForm.addEventListener('submit', function() {
+            localStorage.setItem('savedName', nameInput.value);
+            localStorage.setItem('savedSeed', seedInput.value);
+            // メッセージは投稿後にクリアされるので保存しない
+        });
+    });
+</script>
 
 </body>
 </html>

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: simple-bulletin-board # Render上のサービス名。好きな名前に変更してください
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app" # Flaskアプリのエントリポイントに合わせて 'app:app' を指定
+    plan: free # 'starter' や 'pro' など、必要に応じて変更可能
+    # rootDir: "." # 必要であれば、リポジトリのルート以外のディレクトリを指定
+    # healthCheckPath: "/health" # アプリケーションのヘルスチェックパスがあれば指定（任意）
+    # envVars: # 必要であれば環境変数をここで定義
+    #   - key: DEBUG
+    #     value: "False"

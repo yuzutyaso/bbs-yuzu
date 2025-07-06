@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>掲示板</title>
+<title>シンプル掲示板</title>
 <style>
-/* グラデーションテキストのスタイル (変更なし) */
+/* グラデーションテキストのスタイル */
 .example4 {
 background: linear-gradient(
 to right,
@@ -27,7 +27,7 @@ background-position: 200%;
 }
 }
 
-/* ダークモードの基本スタイル (変更なし) */
+/* ダークモードの基本スタイル */
 body.dark {
 background-color: #111;
 color: #ddd;
@@ -45,7 +45,7 @@ body.dark a {
 color: cyan;
 }
 
-/* 投稿テーブルの基本スタイル (変更なし) */
+/* 投稿テーブルの基本スタイル */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -59,8 +59,13 @@ th, td {
 th {
     background-color: #f2f2f2;
 }
+body.dark th { /* ダークモードのテーブルヘッダー */
+    background-color: #333;
+    color: #ddd;
+}
 
-/* フォーム要素を横並びにするためのスタイル (変更なし) */
+
+/* フォーム要素を横並びにするためのスタイル */
 .form-inline-group {
     display: flex;
     align-items: center;
@@ -78,7 +83,7 @@ th {
     margin-top: 10px;
 }
 
-/* Flashメッセージのスタイル (変更なし) */
+/* Flashメッセージのスタイル */
 .flash-message {
     padding: 10px;
     margin-bottom: 10px;
@@ -101,29 +106,28 @@ th {
     border: 1px solid #bee5eb;
 }
 
-/* ユーザー名とIDの表示スタイル - fontタグに変わるため、ほとんど不要 */
-/* 必要最低限のスタイルは残す */
+/* ユーザー名とIDの表示スタイル */
+/* fontタグで色が指定されるため、ここで特定の色は指定しない */
 .username-display {
     white-space: nowrap;
 }
 .username-id {
-    font-size: 0.8em; /* IDを少し小さくするスタイルは残す */
-    margin-left: 5px; /* 名前との間にスペースは残す */
+    font-size: 0.8em; /* IDを少し小さくする */
+    margin-left: 5px; /* 名前との間にスペース */
 }
 
-/* --- 名前の色とIDの色の定義はCSSから削除 --- */
-/* これらはPythonから直接fontタグのcolor属性として渡される */
-
-/* --- コマンド予測変換用のスタイル --- */
+/* コマンド予測変換用のスタイル */
 .command-suggestions {
     border: 1px solid #ccc;
     max-height: 150px;
     overflow-y: auto;
     background-color: white;
     position: absolute; /* 相対位置の親要素に合わせて配置 */
-    width: 90%; /* テキストエリアに合わせる */
+    width: calc(100% - 20px); /* テキストエリアの幅に合わせる（padding考慮） */
+    max-width: 800px; /* cols=100 (約800px) に合わせる */
     z-index: 10; /* 他の要素の上に表示 */
     display: none; /* 初期状態では非表示 */
+    margin-top: -5px; /* テキストエリアに少し重ねる */
 }
 body.dark .command-suggestions {
     background-color: #333;
@@ -175,9 +179,10 @@ body.dark .command-suggestion-item.selected {
     id="msg"
     required
     >{{ prev_message }}</textarea><br>
-    {# コマンド予測変換の候補表示エリア #}
+    {# コマンド予測変換の候補表示エリア。textareaの直後に配置 #}
     <div id="commandSuggestions" class="command-suggestions"></div>
-    <br>
+    
+    <br> {# textareaとsuggestion divの間のbrは削除し、margin-topで調整 #}
 
     <div class="form-inline-group">
         <label for="name">名前 </label>
@@ -240,7 +245,7 @@ body.dark .command-suggestion-item.selected {
         const msgInput = document.getElementById('msg'); // メッセージ入力欄
         const commandSuggestionsDiv = document.getElementById('commandSuggestions'); // 候補表示エリア
 
-        // === localStorageによる入力値保持 (既存のロジック) ===
+        // === localStorageによる入力値保持 ===
         if (!nameInput.value) {
             const savedName = localStorage.getItem('savedName');
             if (savedName) {
@@ -265,7 +270,17 @@ body.dark .command-suggestion-item.selected {
             { cmd: '/del', desc: '投稿を削除 (例: /del 1 2)' },
             { cmd: '/clear', desc: '全ての投稿を削除し番号をリセット' },
             { cmd: '/topic', desc: '掲示板の話題を変更 (例: /topic 新しい話題)' },
-            { cmd: '/addrole', desc: '権限にハッシュを追加 (例: /addrole SUMMIT_HASHES abcdef1)' },
+            { cmd: '/speaker', desc: 'ユーザーにスピーカー権限を付与 (例: /speaker ID)' },
+            { cmd: '/manager', desc: 'ユーザーにマネージャー権限を付与 (例: /manager ID)' },
+            { cmd: '/moderator', desc: 'ユーザーにモデレーター権限を付与 (例: /moderator ID)' },
+            { cmd: '/summit', desc: 'ユーザーにサミット権限を付与 (例: /summit ID)' },
+            { cmd: '/operator', desc: 'ユーザーに運営権限を付与 (例: /operator ID)' },
+            { cmd: '/disspeaker', desc: 'スピーカー権限を降格 (例: /disspeaker ID)' },
+            { cmd: '/dismanager', desc: 'マネージャー権限を降格 (例: /dismanager ID)' },
+            { cmd: '/dismoderator', desc: 'モデレーター権限を降格 (例: /dismoderator ID)' },
+            { cmd: '/dissummit', desc: 'サミット権限を降格 (例: /dissummit ID)' },
+            { cmd: '/disoperator', desc: '運営権限を降格 (例: /disoperator ID)' },
+            { cmd: '/disself', desc: '自分の権限を青IDにリセット' },
             { cmd: '/destroy', desc: '特定の文字を含む投稿を一括削除' }, // 未実装だが候補に含める
             { cmd: '/NG', desc: 'NGワードを設定' }, // 未実装だが候補に含める
             { cmd: '/OK', desc: 'NGワードを解除' }, // 未実装だが候補に含める
@@ -275,23 +290,12 @@ body.dark .command-suggestion-item.selected {
             { cmd: '/stop', desc: '3分間青IDの投稿を禁止' }, // 未実装だが候補に含める
             { cmd: '/prohibit', desc: '指定時間青ID投稿禁止' }, // 未実装だが候補に含める
             { cmd: '/release', desc: '各種投稿規制を解除' }, // 未実装だが候補に含める
-            { cmd: '/speaker', desc: 'ユーザーにスピーカー権限を付与' }, // 昇格コマンドの例
-            { cmd: '/manager', desc: 'ユーザーにマネージャー権限を付与' },
-            { cmd: '/moderator', desc: 'ユーザーにモデレーター権限を付与' },
-            { cmd: '/summit', desc: 'ユーザーにサミット権限を付与' },
-            { cmd: '/operator', desc: 'ユーザーに運営権限を付与 (通常は手動)' },
-            { cmd: '/disspeaker', desc: 'スピーカー権限を降格' }, // 降格コマンドの例
-            { cmd: '/dismanager', desc: 'マネージャー権限を降格' },
-            { cmd: '/dismoderator', desc: 'モデレーター権限を降格' },
-            { cmd: '/dissummit', desc: 'サミット権限を降格' },
-            { cmd: '/disoperator', desc: '運営権限を降格 (注意)' },
-            { cmd: '/disself', desc: '自分の権限を青IDにリセット' },
             { cmd: '/kill', desc: 'アカウントを使用不能に' }, // 未実装だが候補に含める
             { cmd: '/ban', desc: 'IPまたは投稿番号でBAN' }, // 未実装だが候補に含める
             { cmd: '/revive', desc: '/kill, /banを解除' }, // 未実装だが候補に含める
             { cmd: '/reduce', desc: '権限全体の2%を削除' }, // 未実装だが候補に含める
             { cmd: '/add', desc: 'IDの後ろに文字設定' }, // 未実装だが候補に含める
-            { cmd: '/color', desc: '名前の色を変更 (例: /color #FF00FF abcdef1)' }, // 未実装だが候補に含める
+            { cmd: '/color', desc: '名前の色を変更 (例: /color #FF00FF ID)' }, // 未実装だが候補に含める
             { cmd: '/instances', desc: 'インスタンスを登録/閲覧' }, // 未実装だが候補に含める
             { cmd: '/max', desc: '投稿数の上限を設定' }, // 未実装だが候補に含める
             { cmd: '/range', desc: '表示投稿数を変更' }, // 未実装だが候補に含める
@@ -383,18 +387,19 @@ body.dark .command-suggestion-item.selected {
         // 入力欄からフォーカスが外れたときに候補を非表示にする（少し遅延させてクリックできるようにする）
         msgInput.addEventListener('blur', function() {
             setTimeout(() => {
+                // フォーカスがsuggestions divの子要素に移動した場合は非表示にしない
                 if (!commandSuggestionsDiv.contains(document.activeElement)) {
                     hideSuggestions();
                 }
-            }, 100);
+            }, 100); // 100msの遅延
         });
 
-        // 候補エリア内をクリックしても候補が非表示にならないようにする
+        // 候補エリア内をクリックしても候補が非表示にならないようにする（blurイベントが先に発生するのを防ぐ）
         commandSuggestionsDiv.addEventListener('mousedown', function(event) {
-            event.preventDefault(); // blurイベントが先に発生してhideSuggestionsが呼ばれるのを防ぐ
+            event.preventDefault(); 
         });
     });
 </script>
 
 </body>
-</html>
+    </html>

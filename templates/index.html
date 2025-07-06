@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>シンプル掲示板</title>
-<style>
+<title>連番を簡単に生成！！</title> <style>
 /* グラデーションテキストのスタイル */
 .example4 {
 background: linear-gradient(
@@ -59,10 +58,30 @@ th, td {
 th {
     background-color: #f2f2f2; /* ヘッダーの背景色 */
 }
+
+/* フォーム要素を横並びにするためのスタイル */
+.form-inline-group {
+    display: flex; /* Flexboxを使って要素を横並びにする */
+    align-items: center; /* 垂直方向中央揃え */
+    gap: 10px; /* 要素間のスペース */
+    margin-bottom: 10px; /* 下に少し余白 */
+}
+/* 送信ボタンのスタイル調整 */
+#submit {
+    margin-left: 10px; /* シード入力欄との間にスペース */
+}
+/* スピーカー以上のメッセージ表示チェックボックスのスタイル調整 */
+.speaker-filter {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 10px;
+}
 </style>
 </head>
 <body>
 <a href="https://new-instance-asck.onrender.com/">Yuki Youtube</a><br>
+
 <div class="example4"><h1>掲示板</h1></div>
 新規さんへ、先ずは挨拶をしましょう。シード値は自分のidを決めるものでパスワードのようなものです。<br>
 今の話題に勇気を出して参加してみましょう!!!<br>
@@ -84,25 +103,29 @@ th {
     id="msg"
     required
     ></textarea><br><br>
-    <label for="name">名前 </label>
-    <input
-    type="text"
-    id="name"
-    name="name"
-    value=""
-    maxlength="25"
-    required
-    />
-    <label for="seed"> シード </label>
-    <input type="text" id="seed" name="seed" value="" required />
-    <button type="submit" id="submit">送信する</button>
+
+    <div class="form-inline-group">
+        <label for="name">名前 </label>
+        <input
+        type="text"
+        id="name"
+        name="name"
+        value=""
+        maxlength="25"
+        required
+        />
+        <label for="seed"> シード </label>
+        <input type="text" id="seed" name="seed" value="" required />
+        <button type="submit" id="submit">送信する</button>
+    </div>
 </form>
 
-<br>
-スピーカー以上のメッセージのみ表示<input type="checkbox"><br>
+<div class="speaker-filter">
+    スピーカー以上のメッセージのみ表示<input type="checkbox">
+</div>
 
 <h2>投稿</h2>
-<h3>今の話題：<font color="red">岡山アンチの投稿を永遠に規制中</font><br>岡山の格言：岡山は最高です。</h3>
+<h3>今の話題：<font color="red">岡山アンチの投稿を永遠に規制中</font></h3>
 
 <table border="1">
     <tbody>
@@ -126,4 +149,4 @@ th {
 </table>
 
 </body>
-          </html>
+</html>

@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>連番を簡単に生成！！</title> <style>
+<title>シンプル掲示板</title>
+<style>
 /* グラデーションテキストのスタイル */
 .example4 {
 background: linear-gradient(
@@ -27,20 +28,20 @@ background-position: 200%;
 }
 
 /* ダークモードの基本スタイル */
-.dark {
+body.dark { /* bodyにdarkクラスが付与されることを想定 */
 background-color: #111;
 color: #ddd;
 }
-.dark input,
-.dark textarea,
-.dark button,
-.dark select
+body.dark input,
+body.dark textarea,
+body.dark button,
+body.dark select
 {
 background-color: #111;
 color: #ddd;
 border: #ddd 1px solid;
 }
-.dark a {
+body.dark a {
 color: cyan;
 }
 
@@ -65,6 +66,7 @@ th {
     align-items: center; /* 垂直方向中央揃え */
     gap: 10px; /* 要素間のスペース */
     margin-bottom: 10px; /* 下に少し余白 */
+    flex-wrap: wrap; /* 小さい画面で折り返す */
 }
 /* 送信ボタンのスタイル調整 */
 #submit {
@@ -76,6 +78,28 @@ th {
     align-items: center;
     gap: 5px;
     margin-top: 10px;
+}
+/* Flashメッセージのスタイル */
+.flash-message {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    margin-top: 10px; /* 上に少し余白 */
+}
+.flash-message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+.flash-message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+.flash-message.info { /* Infoメッセージ用スタイルを追加 */
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
 }
 </style>
 </head>
@@ -93,6 +117,14 @@ th {
 <option>バトルスタジアム</option>
 </select><br>
 
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="flash-message {{ category }}">{{ message | safe }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
 <form action="/post" method="POST">
     <label for="msg"></label>
     メッセージ <textarea
@@ -102,7 +134,7 @@ th {
     maxlength="100"
     id="msg"
     required
-    ></textarea><br><br>
+    >{{ prev_message }}</textarea><br><br>
 
     <div class="form-inline-group">
         <label for="name">名前 </label>
@@ -110,12 +142,12 @@ th {
         type="text"
         id="name"
         name="name"
-        value=""
+        value="{{ prev_name }}"
         maxlength="25"
         required
         />
         <label for="seed"> シード </label>
-        <input type="text" id="seed" name="seed" value="" required />
+        <input type="password" id="seed" name="seed" value="{{ prev_seed }}" required />
         <button type="submit" id="submit">送信する</button>
     </div>
 </form>
@@ -125,7 +157,7 @@ th {
 </div>
 
 <h2>投稿</h2>
-<h3>今の話題：<font color="red">岡山アンチの投稿を永遠に規制中</font></h3>
+<h3>今の話題：<font color="red">岡山アンチの投稿を永遠に規制中</font><br>岡山の格言：岡山は最高です。</h3>
 
 <table border="1">
     <tbody>
@@ -137,7 +169,7 @@ th {
         {% for post in posts %}
         <tr>
             <td>{{ post.id }}</td>
-            <td>{{ post.username }}</td> {# ここに "名前@ハッシュ" が表示されます #}
+            <td>{{ post.username }}</td>
             <td>{{ post.message }}</td>
         </tr>
         {% else %}

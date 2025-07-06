@@ -155,12 +155,12 @@ th {
         type="text"
         id="name"
         name="name"
-        value="{{ prev_name }}"
+        value="{{ prev_name }}" {# エラー時の入力保持 #}
         maxlength="25"
         required
         />
         <label for="seed"> シード </label>
-        <input type="password" id="seed" name="seed" value="{{ prev_seed }}" required />
+        <input type="password" id="seed" name="seed" value="{{ prev_seed }}" required /> {# エラー時の入力保持 #}
         <button type="submit" id="submit">送信する</button>
     </div>
 </form>
@@ -208,19 +208,22 @@ th {
         const seedInput = document.getElementById('seed');
         const postForm = document.getElementById('postForm');
 
-        if (!nameInput.value) {
+        // localStorageから値を読み込んでフォームに設定
+        // ただし、prev_name/prev_seed（エラーでリダイレクトされた場合）が優先
+        if (!nameInput.value) { // prev_nameが空の場合のみlocalStorageをチェック
             const savedName = localStorage.getItem('savedName');
             if (savedName) {
                 nameInput.value = savedName;
             }
         }
-        if (!seedInput.value) {
+        if (!seedInput.value) { // prev_seedが空の場合のみlocalStorageをチェック
             const savedSeed = localStorage.getItem('savedSeed');
             if (savedSeed) {
                 seedInput.value = savedSeed;
             }
         }
 
+        // フォームが送信されたときに値をlocalStorageに保存
         postForm.addEventListener('submit', function() {
             localStorage.setItem('savedName', nameInput.value);
             localStorage.setItem('savedSeed', seedInput.value);

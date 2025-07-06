@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
@@ -13,7 +13,6 @@ app.config['SECRET_KEY'] = 'your_super_secret_key_for_flask_flash_messages_chang
 
 db = SQLAlchemy(app)
 
-# 投稿のデータベースモデル (変更なし)
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), nullable=False)
@@ -23,7 +22,6 @@ class Post(db.Model):
     def __repr__(self):
         return '<Post %r>' % self.id
 
-# トピックのデータベースモデル (変更なし)
 class Topic(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(255), nullable=False, default="設定されていません")
@@ -32,32 +30,23 @@ class Topic(db.Model):
     def __repr__(self):
         return '<Topic %r>' % self.content
 
-# === ユーザー情報（IDサフィックス用）のデータベースモデル追加 ===
 class User(db.Model):
-    # IDハッシュが主キー
-    id_hash = db.Column(db.String(7), primary_key=True) 
-    # 後ろにつける文字列
+    id_hash = db.Column(db.String(7), primary_key=True)
     suffix_text = db.Column(db.String(20), nullable=True)
-    # サフィックスの色の指定
-    suffix_color = db.Column(db.String(20), nullable=True, default="magenta") # デフォルトはマゼンタ
+    suffix_color = db.Column(db.String(20), nullable=True, default="magenta")
 
     def __repr__(self):
         return f'<User {self.id_hash}>'
 
-
-# === 権限管理用のJSONファイル設定 ===
 ROLES_FILE = os.path.join(basedir, 'roles.json')
 
-# 運営アカウントのハッシュはコードに直接記述（最高権限のため）
-OPERATOR_HASHES = ["fb2bfb4", "your_operator_hash_2"] # あなたの運営アカウントのハッシュを複数記入可能
+OPERATOR_HASHES = ["fb2bfb4", "your_operator_hash_2"]
 
-# 名前の色 (主に運営用) (変更なし)
 ROLE_NAME_COLORS = {
     "operator": "red",
     "default": "black",
 }
 
-# IDの色 (直接HTMLに渡すため、CSSフレンドリーな色名またはHEXコード) (変更なし)
 ROLE_ID_COLORS = {
     "blue_id": "blue",
     "speaker": "darkorange",
@@ -68,7 +57,6 @@ ROLE_ID_COLORS = {
     "default": "black",
 }
 
-# roles.jsonから権限データを読み込む関数 (変更なし)
 def load_roles():
     if not os.path.exists(ROLES_FILE):
         initial_data = {
@@ -104,7 +92,6 @@ def load_roles():
             "SPEAKER_HASHES": []
         }
 
-# 権限データをroles.jsonに保存する関数 (変更なし)
 def save_roles(roles_data):
     try:
         with open(ROLES_FILE, 'w', encoding='utf-8') as f:
@@ -112,17 +99,15 @@ def save_roles(roles_data):
     except Exception as e:
         print(f"Error saving {ROLES_FILE}: {e}")
 
-# アプリケーション起動時に権限データを読み込む (変更なし)
 global_roles_data = load_roles()
 
 with app.app_context():
-    db.create_all() # 新しいUserモデルのテーブルも作成されます
+    db.create_all()
     if Topic.query.count() == 0:
         initial_topic = Topic(content="今の話題：設定されていません")
         db.session.add(initial_topic)
         db.session.commit()
 
-# ヘルパー関数：ユーザーの権限レベルを判定 (変更なし)
 def get_user_role(user_hash):
     if user_hash in OPERATOR_HASHES:
         return "operator"
@@ -138,7 +123,6 @@ def get_user_role(user_hash):
         return "blue_id"
     return "default"
 
-# ヘルパー関数：指定された権限を持つかチェック (変更なし)
 def has_permission(user_role, required_role):
     roles_hierarchy = {
         "default": 0,
@@ -151,56 +135,58 @@ def has_permission(user_role, required_role):
     }
     return roles_hierarchy.get(user_role, 0) >= roles_hierarchy.get(required_role, 0)
 
-@app.route('/')
-def index():
+# 投稿データを整形して返すヘルパー関数
+def get_formatted_posts():
     posts = Post.query.order_by(Post.created_at.desc()).all()
     
     posts_for_display = []
     for post in posts:
         raw_name = post.username
         display_hash = ""
-        # ユーザー名からハッシュと元の名前を分離
         if '@' in post.username:
             parts = post.username.split('@', 1)
             raw_name = parts[0]
             display_hash = parts[1]
 
-        role = get_user_role(display_hash) # ユーザーのロール（権限名）を取得
+        role = get_user_role(display_hash)
         
-        # 名前の色とID表示ロジック
         name_color_for_html = ROLE_NAME_COLORS["default"]
         id_color_for_html = ROLE_ID_COLORS.get(role, ROLE_ID_COLORS["default"])
-        suffix_text_for_html = "" # 追加するサフィックス文字
-        suffix_color_for_html = "" # サフィックス文字の色
+        suffix_text_for_html = ""
+        suffix_color_for_html = ""
 
         if role == "operator":
             display_name = raw_name
-            display_id = "" # 運営はIDなし
+            display_id = ""
             name_color_for_html = ROLE_NAME_COLORS["operator"]
-            id_color_for_html = "" # 運営はIDなしなので色も不要
+            id_color_for_html = ""
         else:
             display_name = raw_name
             display_id = display_hash
-            # === ここから追加: ユーザーサフィックスの取得と適用 ===
             user_settings = User.query.get(display_hash)
             if user_settings and user_settings.suffix_text:
                 suffix_text_for_html = user_settings.suffix_text
-                suffix_color_for_html = user_settings.suffix_color or "magenta" # デフォルトはマゼンタ
-            # ====================================================
+                suffix_color_for_html = user_settings.suffix_color or "magenta"
 
         posts_for_display.append({
             'id': post.id,
             'name': display_name,
             'display_id': display_id,
             'message': post.message,
-            'created_at': post.created_at,
+            # 日付をJavaScriptで扱いやすい形式に変換 (ISOフォーマット)
+            'created_at': post.created_at.isoformat(), 
             'name_color': name_color_for_html,
             'id_color': id_color_for_html,
-            'suffix_text': suffix_text_for_html, # 新しく追加
-            'suffix_color': suffix_color_for_html, # 新しく追加
+            'suffix_text': suffix_text_for_html,
+            'suffix_color': suffix_color_for_html,
             'role': role,
         })
+    return posts_for_display
 
+@app.route('/')
+def index():
+    # 初回ロード時はHTMLをレンダリング
+    posts_for_display = get_formatted_posts()
     current_topic = Topic.query.first()
     current_topic_content = current_topic.content if current_topic else "今の話題：設定されていません"
 
@@ -210,6 +196,19 @@ def index():
                            prev_message=request.args.get('prev_message', ''),
                            prev_seed=request.args.get('prev_seed', ''))
 
+# === 新しいエンドポイント: 投稿データをJSONで返す ===
+@app.route('/get_posts')
+def get_posts():
+    posts_for_display = get_formatted_posts()
+    current_topic = Topic.query.first()
+    current_topic_content = current_topic.content if current_topic else "今の話題：設定されていません"
+    
+    return jsonify({
+        'posts': posts_for_display,
+        'current_topic': current_topic_content
+    })
+
+# /post ルート (変更なし)
 @app.route('/post', methods=['POST'])
 def post():
     global global_roles_data
@@ -226,18 +225,16 @@ def post():
                                 prev_seed=seed))
 
     seed_hash_full = hashlib.sha256(seed.encode('utf-8')).hexdigest()
-    user_hash = display_hash = seed_hash_full[:7] # コマンド実行者のハッシュ
+    user_hash = display_hash = seed_hash_full[:7]
 
-    # コマンド処理
     if message.startswith('/'):
         command_input = message.strip()
         command_parts = command_input.split(maxsplit=1)
         command = command_parts[0].lower()
         command_arg = command_parts[1] if len(command_parts) > 1 else ""
 
-        executor_role = get_user_role(user_hash) # コマンド実行者の権限
+        executor_role = get_user_role(user_hash)
 
-        # === 権限付与・降格コマンドの処理 (変更なし) ===
         target_id = ""
         if len(command_arg) > 0:
             target_id = command_arg.split()[0]
@@ -326,9 +323,7 @@ def post():
                 flash("あなたは既に青IDまたはデフォルト権限です。", 'info')
             return redirect(url_for('index'))
 
-        # === /add コマンドの処理を追加 ===
         elif command == '/add':
-            # スピーカー以上の権限が必要と仮定
             if not has_permission(executor_role, 'speaker'): 
                 flash(f"コマンド '{command}' を実行する権限がありません。（スピーカー以上が必要です）", 'error')
                 return redirect(url_for('index'))
@@ -338,21 +333,18 @@ def post():
                 flash("/add コマンドには追加したい文字を指定してください。", 'error')
                 return redirect(url_for('index'))
 
-            # UserテーブルにIDハッシュで検索または新規作成
             user_setting = User.query.get(user_hash)
             if not user_setting:
                 user_setting = User(id_hash=user_hash)
                 db.session.add(user_setting)
             
             user_setting.suffix_text = suffix_text
-            user_setting.suffix_color = "magenta" # デフォルトでマゼンタに設定
+            user_setting.suffix_color = "magenta"
 
             db.session.commit()
             flash(f"ID '{user_hash}' の後ろに '{suffix_text}' (マゼンタ) を設定しました。", 'success')
             return redirect(url_for('index'))
-        # ==================================
 
-        # 既存のコマンド処理（変更なし）
         elif command == '/del':
             if not has_permission(executor_role, 'manager'):
                 flash(f"コマンド '{command}' を実行する権限がありません。", 'error')
@@ -418,7 +410,6 @@ def post():
 
         return redirect(url_for('index'))
 
-    # コマンドではない通常の投稿の場合 (変更なし)
     final_username_to_save = f"{raw_username}@{display_hash}"
     new_post = Post(username=final_username_to_save, message=message)
     db.session.add(new_post)

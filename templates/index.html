@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>掲示板</title>
+<title>シンプル掲示板</title>
 <style>
 /* グラデーションテキストのスタイル */
 .example4 {
@@ -107,7 +107,6 @@ body.dark th { /* ダークモードのテーブルヘッダー */
 }
 
 /* ユーザー名とIDの表示スタイル */
-/* fontタグで色が指定されるため、ここで特定の色は指定しない */
 .username-display {
     white-space: nowrap;
 }
@@ -122,12 +121,12 @@ body.dark th { /* ダークモードのテーブルヘッダー */
     max-height: 150px;
     overflow-y: auto;
     background-color: white;
-    position: absolute; /* 相対位置の親要素に合わせて配置 */
-    width: calc(100% - 20px); /* テキストエリアの幅に合わせる（padding考慮） */
-    max-width: 800px; /* cols=100 (約800px) に合わせる */
-    z-index: 10; /* 他の要素の上に表示 */
-    display: none; /* 初期状態では非表示 */
-    margin-top: -5px; /* テキストエリアに少し重ねる */
+    position: absolute;
+    width: calc(100% - 20px);
+    max-width: 800px;
+    z-index: 10;
+    display: none;
+    margin-top: -5px;
 }
 body.dark .command-suggestions {
     background-color: #333;
@@ -138,7 +137,7 @@ body.dark .command-suggestions {
     cursor: pointer;
 }
 .command-suggestion-item:hover,
-.command-suggestion-item.selected { /* キーボード選択時用 */
+.command-suggestion-item.selected {
     background-color: #f0f0f0;
 }
 body.dark .command-suggestion-item:hover,
@@ -179,10 +178,9 @@ body.dark .command-suggestion-item.selected {
     id="msg"
     required
     >{{ prev_message }}</textarea><br>
-    {# コマンド予測変換の候補表示エリア。textareaの直後に配置 #}
     <div id="commandSuggestions" class="command-suggestions"></div>
     
-    <br> {# textareaとsuggestion divの間のbrは削除し、margin-topで調整 #}
+    <br>
 
     <div class="form-inline-group">
         <label for="name">名前 </label>
@@ -190,12 +188,12 @@ body.dark .command-suggestion-item.selected {
         type="text"
         id="name"
         name="name"
-        value="{{ prev_name }}" {# エラー時の入力保持 #}
+        value="{{ prev_name }}"
         maxlength="25"
         required
         />
         <label for="seed"> シード </label>
-        <input type="password" id="seed" name="seed" value="{{ prev_seed }}" required /> {# エラー時の入力保持 #}
+        <input type="password" id="seed" name="seed" value="{{ prev_seed }}" required />
         <button type="submit" id="submit">送信する</button>
     </div>
 </form>
@@ -205,25 +203,30 @@ body.dark .command-suggestion-item.selected {
 </div>
 
 <h2>投稿</h2>
-<h3>現在の話題：<font color="red">{{ current_topic }}</font></h3>
+<h3>現在の話題：<font color="red"><span id="current-topic-display">{{ current_topic }}</span></font></h3>
 
 <table border="1">
-    <tbody>
+    <thead>
         <tr>
             <th>No</th>
             <th>名前</th>
             <th>投稿</th>
         </tr>
+    </thead>
+    <tbody id="posts-table-body">
+        {# ここに投稿データがJavaScriptで動的に挿入されます #}
+        {# 初回ロード時はPythonから渡されたデータがここに表示されるが、その後の更新はJSで行う #}
         {% for post in posts %}
         <tr>
             <td>{{ post.id }}</td>
             <td>
                 <span class="username-display">
-                    {# 名前の色をfontタグで直接指定 #}
                     <font color="{{ post.name_color }}">{{ post.name }}</font>
-                    {% if post.display_id %} {# 運営の場合はIDが表示されないように #}
-                        {# IDの色をfontタグで直接指定 #}
+                    {% if post.display_id %}
                         <font color="{{ post.id_color }}">@{{ post.display_id }}</font>
+                        {% if post.suffix_text %}
+                            <font color="{{ post.suffix_color }}">{{ post.suffix_text }}</font>
+                        {% endif %}
                     {% endif %}
                 </span>
             </td>
@@ -242,8 +245,10 @@ body.dark .command-suggestion-item.selected {
         const nameInput = document.getElementById('name');
         const seedInput = document.getElementById('seed');
         const postForm = document.getElementById('postForm');
-        const msgInput = document.getElementById('msg'); // メッセージ入力欄
-        const commandSuggestionsDiv = document.getElementById('commandSuggestions'); // 候補表示エリア
+        const msgInput = document.getElementById('msg');
+        const commandSuggestionsDiv = document.getElementById('commandSuggestions');
+        const postsTableBody = document.getElementById('posts-table-body'); // 投稿表示部分のtbody
+        const currentTopicDisplay = document.getElementById('current-topic-display'); // 話題表示部分
 
         // === localStorageによる入力値保持 ===
         if (!nameInput.value) {
@@ -264,8 +269,6 @@ body.dark .command-suggestion-item.selected {
         });
 
         // === コマンド予測変換のロジック ===
-
-        // 利用可能なコマンドのリスト（説明付き）
         const availableCommands = [
             { cmd: '/del', desc: '投稿を削除 (例: /del 1 2)' },
             { cmd: '/clear', desc: '全ての投稿を削除し番号をリセット' },
@@ -281,67 +284,65 @@ body.dark .command-suggestion-item.selected {
             { cmd: '/dissummit', desc: 'サミット権限を降格 (例: /dissummit ID)' },
             { cmd: '/disoperator', desc: '運営権限を降格 (例: /disoperator ID)' },
             { cmd: '/disself', desc: '自分の権限を青IDにリセット' },
-            { cmd: '/destroy', desc: '特定の文字を含む投稿を一括削除' }, // 未実装だが候補に含める
-            { cmd: '/NG', desc: 'NGワードを設定' }, // 未実装だが候補に含める
-            { cmd: '/OK', desc: 'NGワードを解除' }, // 未実装だが候補に含める
-            { cmd: '/prevent', desc: '青IDの投稿を禁止' }, // 未実装だが候補に含める
-            { cmd: '/permit', desc: '/preventを解除' }, // 未実装だが候補に含める
-            { cmd: '/restrict', desc: '青IDの投稿を制限' }, // 未実装だが候補に含める
-            { cmd: '/stop', desc: '3分間青IDの投稿を禁止' }, // 未実装だが候補に含める
-            { cmd: '/prohibit', desc: '指定時間青ID投稿禁止' }, // 未実装だが候補に含める
-            { cmd: '/release', desc: '各種投稿規制を解除' }, // 未実装だが候補に含める
-            { cmd: '/kill', desc: 'アカウントを使用不能に' }, // 未実装だが候補に含める
-            { cmd: '/ban', desc: 'IPまたは投稿番号でBAN' }, // 未実装だが候補に含める
-            { cmd: '/revive', desc: '/kill, /banを解除' }, // 未実装だが候補に含める
-            { cmd: '/reduce', desc: '権限全体の2%を削除' }, // 未実装だが候補に含める
-            { cmd: '/add', desc: 'IDの後ろに文字設定' }, // 未実装だが候補に含める
-            { cmd: '/color', desc: '名前の色を変更 (例: /color #FF00FF ID)' }, // 未実装だが候補に含める
-            { cmd: '/instances', desc: 'インスタンスを登録/閲覧' }, // 未実装だが候補に含める
-            { cmd: '/max', desc: '投稿数の上限を設定' }, // 未実装だが候補に含める
-            { cmd: '/range', desc: '表示投稿数を変更' }, // 未実装だが候補に含める
+            { cmd: '/add', desc: 'IDの後ろに文字設定 (例: /add 文字)' },
+            { cmd: '/destroy', desc: '特定の文字を含む投稿を一括削除' },
+            { cmd: '/NG', desc: 'NGワードを設定' },
+            { cmd: '/OK', desc: 'NGワードを解除' },
+            { cmd: '/prevent', desc: '青IDの投稿を禁止' },
+            { cmd: '/permit', desc: '/preventを解除' },
+            { cmd: '/restrict', desc: '青IDの投稿を制限' },
+            { cmd: '/stop', desc: '3分間青IDの投稿を禁止' },
+            { cmd: '/prohibit', desc: '指定時間青ID投稿禁止' },
+            { cmd: '/release', desc: '各種投稿規制を解除' },
+            { cmd: '/kill', desc: 'アカウントを使用不能に' },
+            { cmd: '/ban', desc: 'IPまたは投稿番号でBAN' },
+            { cmd: '/revive', desc: '/kill, /banを解除' },
+            { cmd: '/reduce', desc: '権限全体の2%を削除' },
+            { cmd: '/color', desc: '名前の色を変更 (例: /color #FF00FF ID)' },
+            { cmd: '/instances', desc: 'インスタンスを登録/閲覧' },
+            { cmd: '/max', desc: '投稿数の上限を設定' },
+            { cmd: '/range', desc: '表示投稿数を変更' },
         ];
         
-        let selectedSuggestionIndex = -1; // 選択中の候補のインデックス
+        let selectedSuggestionIndex = -1;
 
         msgInput.addEventListener('input', function() {
             const text = msgInput.value;
-            selectedSuggestionIndex = -1; // 入力があるたびに選択をリセット
+            selectedSuggestionIndex = -1;
 
             if (text.startsWith('/')) {
-                const commandPart = text.substring(1).toLowerCase(); // '/'を除いたコマンド部分
+                const commandPart = text.substring(1).toLowerCase();
                 const filteredSuggestions = availableCommands.filter(command => 
                     command.cmd.substring(1).toLowerCase().startsWith(commandPart)
                 );
-                
                 displaySuggestions(filteredSuggestions);
             } else {
                 hideSuggestions();
             }
         });
 
-        // キーボード操作で候補を選択
         msgInput.addEventListener('keydown', function(event) {
             const items = commandSuggestionsDiv.querySelectorAll('.command-suggestion-item');
             if (items.length === 0) return;
 
             if (event.key === 'ArrowDown') {
-                event.preventDefault(); // カーソル移動を防止
+                event.preventDefault();
                 selectedSuggestionIndex = (selectedSuggestionIndex + 1) % items.length;
                 updateSelectedSuggestion(items);
             } else if (event.key === 'ArrowUp') {
-                event.preventDefault(); // カーソル移動を防止
+                event.preventDefault();
                 selectedSuggestionIndex = (selectedSuggestionIndex - 1 + items.length) % items.length;
                 updateSelectedSuggestion(items);
             } else if (event.key === 'Enter' && selectedSuggestionIndex !== -1) {
-                event.preventDefault(); // フォーム送信を防止
-                items[selectedSuggestionIndex].click(); // クリックイベントをシミュレート
-            } else if (event.key === 'Escape') { // Escキーで非表示
+                event.preventDefault();
+                items[selectedSuggestionIndex].click();
+            } else if (event.key === 'Escape') {
                 hideSuggestions();
             }
         });
 
         function displaySuggestions(suggestions) {
-            commandSuggestionsDiv.innerHTML = ''; // 一度クリア
+            commandSuggestionsDiv.innerHTML = '';
             if (suggestions.length === 0) {
                 hideSuggestions();
                 return;
@@ -350,24 +351,22 @@ body.dark .command-suggestion-item.selected {
             suggestions.forEach((suggestion, index) => {
                 const item = document.createElement('div');
                 item.classList.add('command-suggestion-item');
-                // コマンドと説明を両方表示
                 item.innerHTML = `<strong>${suggestion.cmd}</strong> - ${suggestion.desc}`;
                 
-                // クリックで補完
                 item.addEventListener('click', function() {
-                    msgInput.value = suggestion.cmd + ' '; // コマンドの後にスペースを追加
+                    msgInput.value = suggestion.cmd + ' ';
                     hideSuggestions();
-                    msgInput.focus(); // 入力欄にフォーカスを戻す
+                    msgInput.focus();
                 });
                 commandSuggestionsDiv.appendChild(item);
             });
-            commandSuggestionsDiv.style.display = 'block'; // 表示
+            commandSuggestionsDiv.style.display = 'block';
         }
 
         function hideSuggestions() {
-            commandSuggestionsDiv.style.display = 'none'; // 非表示
-            commandSuggestionsDiv.innerHTML = ''; // 内容をクリア
-            selectedSuggestionIndex = -1; // 選択をリセット
+            commandSuggestionsDiv.style.display = 'none';
+            commandSuggestionsDiv.innerHTML = '';
+            selectedSuggestionIndex = -1;
         }
 
         function updateSelectedSuggestion(items) {
@@ -378,28 +377,85 @@ body.dark .command-suggestion-item.selected {
                     item.classList.remove('selected');
                 }
             });
-            // 選択された要素がスクロール範囲外の場合、スクロールさせる
             if (selectedSuggestionIndex !== -1) {
                 items[selectedSuggestionIndex].scrollIntoView({ block: 'nearest' });
             }
         }
 
-        // 入力欄からフォーカスが外れたときに候補を非表示にする（少し遅延させてクリックできるようにする）
         msgInput.addEventListener('blur', function() {
             setTimeout(() => {
-                // フォーカスがsuggestions divの子要素に移動した場合は非表示にしない
                 if (!commandSuggestionsDiv.contains(document.activeElement)) {
                     hideSuggestions();
                 }
-            }, 100); // 100msの遅延
+            }, 100);
         });
 
-        // 候補エリア内をクリックしても候補が非表示にならないようにする（blurイベントが先に発生するのを防ぐ）
         commandSuggestionsDiv.addEventListener('mousedown', function(event) {
-            event.preventDefault(); 
+            event.preventDefault();
         });
+
+
+        // === 自動更新のロジック ===
+
+        // 投稿をレンダリングする関数
+        function renderPosts(posts) {
+            let html = '';
+            if (posts.length === 0) {
+                html = '<tr><td colspan="3">まだ投稿がありません。</td></tr>';
+            } else {
+                posts.forEach(post => {
+                    let idHtml = '';
+                    if (post.display_id) {
+                        idHtml = `<font color="${post.id_color}">@${post.display_id}</font>`;
+                        if (post.suffix_text) {
+                            idHtml += `<font color="${post.suffix_color}">${post.suffix_text}</font>`;
+                        }
+                    }
+                    html += `
+                        <tr>
+                            <td>${post.id}</td>
+                            <td>
+                                <span class="username-display">
+                                    <font color="${post.name_color}">${post.name}</font>
+                                    ${idHtml}
+                                </span>
+                            </td>
+                            <td>${post.message}</td>
+                        </tr>
+                    `;
+                });
+            }
+            postsTableBody.innerHTML = html;
+        }
+
+        // 投稿とトピックをサーバーから取得・更新する関数
+        async function fetchAndUpdatePosts() {
+            try {
+                const response = await fetch('/get_posts');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                // 投稿テーブルを更新
+                renderPosts(data.posts);
+
+                // 話題を更新
+                currentTopicDisplay.textContent = data.current_topic;
+
+            } catch (error) {
+                console.error("Error fetching posts:", error);
+                // 必要であれば、ユーザーにエラーを通知するUIを追加
+            }
+        }
+
+        // ページロード時に一度更新
+        fetchAndUpdatePosts();
+
+        // 5秒ごとに自動更新
+        setInterval(fetchAndUpdatePosts, 5000); // 5000ミリ秒 = 5秒
     });
 </script>
 
 </body>
-    </html>
+</html>

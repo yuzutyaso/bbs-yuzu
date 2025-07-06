@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>掲示板</title>
+<title>シンプル掲示板</title>
 <style>
 /* グラデーションテキストのスタイル */
 .example4 {
@@ -101,6 +101,58 @@ th {
     color: #0c5460;
     border: 1px solid #bee5eb;
 }
+
+/* ユーザー名とIDの表示スタイル */
+.username-display {
+    white-space: nowrap; /* IDが改行されないように */
+}
+.username-name {
+    font-weight: bold; /* 名前を太字に */
+}
+.username-id {
+    font-size: 0.8em; /* IDを少し小さく */
+    margin-left: 5px; /* 名前との間にスペース */
+}
+
+/* --- IDの色定義 --- */
+/* 青シード */
+.username-id.id-color-blue_id {
+    color: blue;
+}
+/* スピーカー */
+.username-id.id-color-speaker {
+    color: orange;
+}
+/* マネージャー */
+.username-id.id-color-manager {
+    color: red; /* マネージャーのIDは赤色 */
+}
+/* モデレーター */
+.username-id.id-color-moderator {
+    color: darkmagenta;
+}
+/* サミット */
+.username-id.id-color-summit {
+    color: darkcyan;
+}
+/* 運営（IDなしなのでこのスタイルは適用されないが、参考として残す） */
+.username-id.id-color-operator {
+    color: red;
+}
+
+/* 運営の名前の特別色（名前が赤色になる） */
+.username-name.name-color-operator {
+    color: red;
+}
+/* 運営以外の名前のデフォルト色（IDに色がつくため、名前はデフォルト色か黒が一般的） */
+/* 必要であれば、ここに名前のデフォルト色を設定 */
+.username-name {
+    color: black; /* デフォルトの名前の色を黒に設定 (好みで変更) */
+}
+body.dark .username-name {
+    color: #ddd; /* ダークモードでの名前のデフォルト色 */
+}
+
 </style>
 </head>
 <body>
@@ -125,7 +177,8 @@ th {
   {% endif %}
 {% endwith %}
 
-<form action="/post" method="POST" id="postForm"> <label for="msg"></label>
+<form action="/post" method="POST" id="postForm">
+    <label for="msg"></label>
     メッセージ <textarea
     name="message"
     rows="6"
@@ -168,7 +221,16 @@ th {
         {% for post in posts %}
         <tr>
             <td>{{ post.id }}</td>
-            <td>{{ post.username }}</td>
+            <td>
+                <span class="username-display">
+                    {# 運営は名前が赤色になるので、個別のクラスを付与 #}
+                    <span class="username-name {% if post.name_color == 'red' and post.display_id == '' %}name-color-operator{% endif %}">{{ post.name }}</span>
+                    {% if post.display_id %} {# 運営の場合はIDが表示されないように #}
+                        {# IDの表示色を制御するクラスを追加 #}
+                        <span class="username-id id-color-{{ post.role }}">@{{ post.display_id }}</span>
+                    {% endif %}
+                </span>
+            </td>
             <td>{{ post.message }}</td>
         </tr>
         {% else %}
@@ -185,27 +247,22 @@ th {
         const seedInput = document.getElementById('seed');
         const postForm = document.getElementById('postForm');
 
-        // ページ読み込み時にLocalStorageから値を読み込む
-        // prev_name/prev_seedがJinja2によって既に設定されている場合はそちらを優先
-        // (サーバーサイドでのエラーリダイレクト時)
-        if (!nameInput.value) { // prev_nameが空の場合のみLocalStorageを試す
+        if (!nameInput.value) {
             const savedName = localStorage.getItem('savedName');
             if (savedName) {
                 nameInput.value = savedName;
             }
         }
-        if (!seedInput.value) { // prev_seedが空の場合のみLocalStorageを試す
+        if (!seedInput.value) {
             const savedSeed = localStorage.getItem('savedSeed');
             if (savedSeed) {
                 seedInput.value = savedSeed;
             }
         }
 
-        // フォーム送信時にLocalStorageに値を保存する
         postForm.addEventListener('submit', function() {
             localStorage.setItem('savedName', nameInput.value);
             localStorage.setItem('savedSeed', seedInput.value);
-            // メッセージは投稿後にクリアされるので保存しない
         });
     });
 </script>

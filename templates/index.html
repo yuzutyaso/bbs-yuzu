@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>シンプル掲示板</title>
+<title>掲示板</title>
 <style>
-/* グラデーションテキストのスタイル */
+/* グラデーションテキストのスタイル (変更なし) */
 .example4 {
 background: linear-gradient(
 to right,
@@ -27,15 +27,15 @@ background-position: 200%;
 }
 }
 
-/* ダークモードの基本スタイル */
-body.dark { /* bodyにdarkクラスが付与されることを想定 */
+/* ダークモードの基本スタイル (変更なし) */
+body.dark {
 background-color: #111;
 color: #ddd;
 }
 body.dark input,
 body.dark textarea,
 body.dark button,
-body.dark select
+body.dark select 
 {
 background-color: #111;
 color: #ddd;
@@ -45,46 +45,45 @@ body.dark a {
 color: cyan;
 }
 
-/* 投稿テーブルの基本スタイル */
+/* 投稿テーブルの基本スタイル (変更なし) */
 table {
     width: 100%;
-    border-collapse: collapse; /* セルの境界線を結合 */
+    border-collapse: collapse;
     margin-top: 20px;
 }
 th, td {
-    border: 1px solid #ccc; /* セルの境界線 */
+    border: 1px solid #ccc;
     padding: 8px;
     text-align: left;
 }
 th {
-    background-color: #f2f2f2; /* ヘッダーの背景色 */
+    background-color: #f2f2f2;
 }
 
-/* フォーム要素を横並びにするためのスタイル */
+/* フォーム要素を横並びにするためのスタイル (変更なし) */
 .form-inline-group {
-    display: flex; /* Flexboxを使って要素を横並びにする */
-    align-items: center; /* 垂直方向中央揃え */
-    gap: 10px; /* 要素間のスペース */
-    margin-bottom: 10px; /* 下に少し余白 */
-    flex-wrap: wrap; /* 小さい画面で折り返す */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
 }
-/* 送信ボタンのスタイル調整 */
 #submit {
-    margin-left: 10px; /* シード入力欄との間にスペース */
+    margin-left: 10px;
 }
-/* スピーカー以上のメッセージ表示チェックボックスのスタイル調整 */
 .speaker-filter {
     display: flex;
     align-items: center;
     gap: 5px;
     margin-top: 10px;
 }
-/* Flashメッセージのスタイル */
+
+/* Flashメッセージのスタイル (変更なし) */
 .flash-message {
     padding: 10px;
     margin-bottom: 10px;
     border-radius: 5px;
-    margin-top: 10px; /* 上に少し余白 */
+    margin-top: 10px;
 }
 .flash-message.error {
     background-color: #f8d7da;
@@ -96,62 +95,24 @@ th {
     color: #155724;
     border: 1px solid #c3e6cb;
 }
-.flash-message.info { /* Infoメッセージ用スタイルを追加 */
+.flash-message.info {
     background-color: #d1ecf1;
     color: #0c5460;
     border: 1px solid #bee5eb;
 }
 
-/* ユーザー名とIDの表示スタイル */
+/* ユーザー名とIDの表示スタイル - fontタグに変わるため、ほとんど不要 */
+/* 必要最低限のスタイルは残す */
 .username-display {
-    white-space: nowrap; /* IDが改行されないように */
-}
-.username-name {
-    font-weight: bold; /* 名前を太字に */
+    white-space: nowrap;
 }
 .username-id {
-    font-size: 0.8em; /* IDを少し小さく */
-    margin-left: 5px; /* 名前との間にスペース */
+    font-size: 0.8em; /* IDを少し小さくするスタイルは残す */
+    margin-left: 5px; /* 名前との間にスペースは残す */
 }
 
-/* --- IDの色定義 --- */
-/* 青シード */
-.username-id.id-color-blue_id {
-    color: blue;
-}
-/* スピーカー */
-.username-id.id-color-speaker {
-    color: orange;
-}
-/* マネージャー */
-.username-id.id-color-manager {
-    color: red; /* マネージャーのIDは赤色 */
-}
-/* モデレーター */
-.username-id.id-color-moderator {
-    color: darkmagenta;
-}
-/* サミット */
-.username-id.id-color-summit {
-    color: darkcyan;
-}
-/* 運営（IDなしなのでこのスタイルは適用されないが、参考として残す） */
-.username-id.id-color-operator {
-    color: red;
-}
-
-/* 運営の名前の特別色（名前が赤色になる） */
-.username-name.name-color-operator {
-    color: red;
-}
-/* 運営以外の名前のデフォルト色（IDに色がつくため、名前はデフォルト色か黒が一般的） */
-/* 必要であれば、ここに名前のデフォルト色を設定 */
-.username-name {
-    color: black; /* デフォルトの名前の色を黒に設定 (好みで変更) */
-}
-body.dark .username-name {
-    color: #ddd; /* ダークモードでの名前のデフォルト色 */
-}
+/* --- 名前の色とIDの色の定義はCSSから削除 --- */
+/* これらはPythonから直接fontタグのcolor属性として渡される */
 
 </style>
 </head>
@@ -223,11 +184,11 @@ body.dark .username-name {
             <td>{{ post.id }}</td>
             <td>
                 <span class="username-display">
-                    {# 運営は名前が赤色になるので、個別のクラスを付与 #}
-                    <span class="username-name {% if post.name_color == 'red' and post.display_id == '' %}name-color-operator{% endif %}">{{ post.name }}</span>
+                    {# 名前の色をfontタグで直接指定 #}
+                    <font color="{{ post.name_color }}">{{ post.name }}</font>
                     {% if post.display_id %} {# 運営の場合はIDが表示されないように #}
-                        {# IDの表示色を制御するクラスを追加 #}
-                        <span class="username-id id-color-{{ post.role }}">@{{ post.display_id }}</span>
+                        {# IDの色をfontタグで直接指定 #}
+                        <font color="{{ post.id_color }}">@{{ post.display_id }}</font>
                     {% endif %}
                 </span>
             </td>

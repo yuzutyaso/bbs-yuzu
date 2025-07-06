@@ -8,7 +8,6 @@ app = Flask(__name__)
 basedir = os.os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'board.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-# 本番環境ではこのSECRET_KEYをもっと複雑な値に変更してください！
 app.config['SECRET_KEY'] = 'your_super_secret_key_for_flask_flash_messages_change_this_in_prod'
 
 db = SQLAlchemy(app)
@@ -26,48 +25,37 @@ class Post(db.Model):
 # トピックのデータベースモデル
 class Topic(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.String(255), nullable=False, default="設定されていません") # 現在の話題
+    content = db.Column(db.String(255), nullable=False, default="設定されていません")
     last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def __repr__(self):
         return '<Topic %r>' % self.content
 
 # === 権限ごとのハッシュと色の定義 (ここをあなたの環境に合わせて設定してください！) ===
-# 各権限に割り当てたいユーザーのシード値から生成される7文字のハッシュを設定してください。
-# 例: シード値 "myadminseed" から "your_admin_hash_here" が生成される場合
-# Pythonでハッシュを確認する方法:
-# import hashlib
-# print(hashlib.sha256("あなたのシード値".encode('utf-8')).hexdigest()[:7])
+# OPERATOR_HASHES = ["fb2bfb4"] # 運営アカウントのハッシュ（例: "fb2bfb4" は運営シードから生成されるハッシュ）
+# 他のハッシュリストも同様に設定
+OPERATOR_HASHES = ["fb2bfb4"]
+SUMMIT_HASHES = ["summit_hash_example"]
+MODERATOR_HASHES = ["mod_hash_example"]
+MANAGER_HASHES = ["manager_hash_example"]
+SPEAKER_HASHES = ["speaker_hash_example"]
 
-OPERATOR_HASHES = ["fb2bfb4"] # 運営アカウントのハッシュ（例: "fb2bfb4" は運営シードから生成されるハッシュ）
-SUMMIT_HASHES = [] # サミットのハッシュリスト (例: ["summit_hash_abc", "summit_hash_def"])
-MODERATOR_HASHES = [] # モデレーターのハッシュリスト (例: ["mod_hash_123", "mod_hash_456"])
-MANAGER_HASHES = [] # マネージャーのハッシュリスト (例: ["mgr_hash_789", "mgr_hash_012"])
-SPEAKER_HASHES = [] # スピーカーのハッシュリスト (例: ["spk_hash_345", "spk_hash_678"])
-
-# 権限と色のマッピング (CSSフレンドリーな色名またはHEXコード)
+# ROLE_COLORS は名前の色に使うための定義として残しますが、
+# IDの色はCSSで直接クラスに紐付けます
 ROLE_COLORS = {
-    "operator": "red",          # 運営：IDなし、名前赤色
-    "summit": "darkcyan",       # サミット：ダークシアン
-    "moderator": "darkmagenta", # モデレーター：ダークマゼンタ
-    "manager": "red",           # マネージャー：IDありの赤色 (運営と同じ赤ですが、IDの有無で区別)
-    "speaker": "orange",        # スピーカー：オレンジ
-    "blue_id": "blue",          # 青ID：青色 (特定の権限に属さないがハッシュを持つユーザー)
-    "default": "#333",          # その他のユーザー（ハッシュがない、または未定義のハッシュ）
+    "operator": "red",          # 運営の名前は赤
+    "default_name": "black",    # デフォルトの名前の色 (IDに色がつく場合)
 }
 # ==========================================================
 
-# データベースの初期化とトピックの作成
 with app.app_context():
     db.create_all()
-    # アプリケーション起動時にトピックがなければ初期値を設定
     if Topic.query.count() == 0:
         initial_topic = Topic(content="今の話題：設定されていません")
         db.session.add(initial_topic)
         db.session.commit()
 
 # ヘルパー関数：ユーザーの権限レベルを判定
-# 権限の優先順位は、リストの上から順にチェックされます。
 def get_user_role(user_hash):
     if user_hash in OPERATOR_HASHES:
         return "operator"
@@ -79,54 +67,54 @@ def get_user_role(user_hash):
         return "manager"
     elif user_hash in SPEAKER_HASHES:
         return "speaker"
-    if user_hash: # 上記どの権限にも属さないがハッシュを持つ場合は「青シード」
+    if user_hash: # ハッシュがあるが特定の権限でない場合
         return "blue_id"
-    return "default" # ハッシュを持たない場合はデフォルト（青IDとは異なる扱い）
+    return "default" # ハッシュがない場合（この場合はIDは表示されないはずだが念のため）
 
 @app.route('/')
 def index():
     posts = Post.query.order_by(Post.created_at.desc()).all()
     
-    # 投稿ごとに表示用の情報を付与
     posts_for_display = []
     for post in posts:
-        # ユーザー名から名前とハッシュを分離
         raw_name = post.username
         display_hash = ""
         if '@' in post.username:
-            parts = post.username.split('@', 1) # 最初の@で分割
+            parts = post.username.split('@', 1)
             raw_name = parts[0]
             display_hash = parts[1]
 
-        role = get_user_role(display_hash)
-        name_color = ROLE_COLORS.get(role, ROLE_COLORS["default"]) # 権限に応じた色を取得
-
-        # 運営の場合の特別処理: ID非表示、名前は運営用赤色
+        role = get_user_role(display_hash) # ユーザーのロール（権限名）を取得
+        
+        # 名前の色とID表示ロジック
         if role == "operator":
-            display_name = raw_name # 運営はハッシュ非表示
-            display_id = "" # ID欄も空にする
-            name_color = ROLE_COLORS["operator"] # 運営の色 (赤)
+            display_name = raw_name
+            display_id = "" # 運営はIDなし
+            name_color_for_html = ROLE_COLORS["operator"] # 運営の名前は赤色
         else:
             display_name = raw_name
-            display_id = display_hash # 通常のID表示 (@付き)
+            display_id = display_hash
+            # 運営以外の名前はデフォルト色か黒（IDに色がつくため）
+            name_color_for_html = ROLE_COLORS.get("default_name", "black")
 
         posts_for_display.append({
             'id': post.id,
             'name': display_name,
-            'display_id': display_id, # 表示用のID（ハッシュ）
+            'display_id': display_id,
             'message': post.message,
             'created_at': post.created_at,
-            'name_color': name_color, # 名前の色
+            'name_color': name_color_for_html, # 名前の色 (運営用またはデフォルト)
+            'role': role, # IDのクラス名生成のためにロール情報も渡す
         })
 
-    current_topic = Topic.query.first() # 常に最初の（唯一の）トピックを取得
+    current_topic = Topic.query.first()
     current_topic_content = current_topic.content if current_topic else "今の話題：設定されていません"
 
-    return render_template('index.html', posts=posts_for_display, # 加工した投稿リストを渡す
-                           current_topic=current_topic_content, # トピックをテンプレートに渡す
-                           prev_name=request.args.get('prev_name', ''), # エラー時の入力保持
-                           prev_seed=request.args.get('prev_seed', ''),   # エラー時の入力保持
-                           prev_message=request.args.get('prev_message', '')) # エラー時の入力保持
+    return render_template('index.html', posts=posts_for_display,
+                           current_topic=current_topic_content,
+                           prev_name=request.args.get('prev_name', ''),
+                           prev_seed=request.args.get('prev_seed', ''),
+                           prev_message=request.args.get('prev_message', ''))
 
 @app.route('/post', methods=['POST'])
 def post():
@@ -141,34 +129,24 @@ def post():
                                 prev_message=message,
                                 prev_seed=seed))
 
-    # シード値をSHA-256でハッシュ化し、最初の7文字を取得
     seed_hash_full = hashlib.sha256(seed.encode('utf-8')).hexdigest()
     display_hash = seed_hash_full[:7]
     
-    # コマンド処理の分岐
     if message.startswith('/'):
         command_input = message.strip()
-        command_parts = command_input.split(maxsplit=1) # 最初のスペースで分割
-        command = command_parts[0].lower() # コマンド名を小文字に変換
+        command_parts = command_input.split(maxsplit=1)
+        command = command_parts[0].lower()
         command_arg = command_parts[1] if len(command_parts) > 1 else ""
 
-        # コマンド実行権限チェック
-        # 各コマンドに必要な権限レベルを設定できます。
         allowed_to_command = False
         if command in ['/del', '/clear', '/topic']:
-            # これらのコマンドは運営のみ実行可能
             if display_hash in OPERATOR_HASHES:
                 allowed_to_command = True
-        # ここに他のコマンドとそれに対応する権限チェックを追加できます。
-        # 例: elif command == '/ban':
-        #         if display_hash in MODERATOR_HASHES or display_hash in OPERATOR_HASHES:
-        #             allowed_to_command = True
 
         if not allowed_to_command:
             flash(f"コマンド '{command}' を実行する権限がありません。", 'error')
             return redirect(url_for('index'))
 
-        # 各コマンド処理の実行
         if command == '/del':
             del_ids = command_arg.split()
             deleted_count = 0
@@ -193,7 +171,6 @@ def post():
             try:
                 num_rows_deleted = db.session.query(Post).delete()
                 db.session.commit()
-                # SQLiteのシーケンスIDをリセット
                 db.session.execute(db.text("UPDATE sqlite_sequence SET seq = 0 WHERE name = 'post'"))
                 db.session.commit()
                 flash(f"{num_rows_deleted}件の全ての投稿を削除し、投稿番号をリセットしました。", 'success')
@@ -201,14 +178,14 @@ def post():
                 db.session.rollback()
                 flash(f"全ての投稿の削除中にエラーが発生しました: {e}", 'error')
         elif command == '/topic':
-            if command_arg: # トピックの内容があるかチェック
+            if command_arg:
                 try:
                     current_topic_obj = Topic.query.first()
                     if current_topic_obj:
                         current_topic_obj.content = command_arg
                         db.session.commit()
                         flash(f"話題を「{command_arg}」に変更しました。", 'success')
-                    else: # トピックがDBに存在しない場合（通常は初期化で作成されるはずですが念のため）
+                    else:
                         new_topic = Topic(content=command_arg)
                         db.session.add(new_topic)
                         db.session.commit()
@@ -221,11 +198,8 @@ def post():
         else:
             flash(f"不明なコマンド: {command}", 'error')
 
-        # コマンドが実行された場合、その投稿自体は掲示板には表示しないためリダイレクト
         return redirect(url_for('index'))
 
-    # コマンドではない通常の投稿の場合
-    # DBにはハッシュ付きのユーザー名を保存します
     final_username_to_save = f"{raw_username}@{display_hash}"
     new_post = Post(username=final_username_to_save, message=message)
     db.session.add(new_post)

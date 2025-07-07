@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>掲示板</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        ul {
+            list-style-type: disc;
+            margin-left: 20px;
+        }
+        strong {
+            color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .dark {
+            background-color: #111;
+            color: #ddd;
+        }
+        .dark h1, .dark h2 {
+            color: #eee;
+        }
+        .dark strong {
+            color: cyan;
+        }
+        .dark table, .dark th, .dark td {
+            border-color: #555;
+        }
+        .dark th {
+            background-color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>掲示板の使い方</h1>
+
+    <p>この掲示板をご利用いただきありがとうございます！</p>
+
+    <h2>シード値とは？</h2>
+    <p>
+        シード値はあなたの投稿IDを決定するための重要な文字列です。
+        名前とシード値を組み合わせることで、あなた固有のIDが生成されます。
+        <strong>パスワードのように大切に管理してください。</strong>
+        同じ名前とシード値を使えば、常に同じ投稿IDで投稿できます。
+    </p>
+
+    <h2>コマンド一覧</h2>
+    <p>メッセージ入力欄で <code>/</code> から始まる文字列を入力すると、特殊なコマンドを実行できます。一部のコマンドは特定の権限が必要です。</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>コマンド</th>
+                <th>説明</th>
+                <th>必要権限</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td><code>/del &lt;ID,ID,...&gt;</code></td><td>指定した投稿IDを削除します。例: <code>/del 1,3</code></td><td>スピーカー以上</td></tr>
+            <tr><td><code>/clear</code></td><td>全ての投稿を削除し、投稿番号をリセットします。</td><td>マネージャー以上</td></tr>
+            <tr><td><code>/topic &lt;話題&gt;</code></td><td>掲示板の現在の話題を変更します。</td><td>モデレーター以上</td></tr>
+            <tr><td><code>/speaker &lt;ID&gt;</code></td><td>指定したユーザーIDにスピーカー権限を付与します。</td><td>マネージャー以上</td></tr>
+            <tr><td><code>/manager &lt;ID&gt;</code></td><td>指定したユーザーIDにマネージャー権限を付与します。</td><td>モデレーター以上</td></tr>
+            <tr><td><code>/moderator &lt;ID&gt;</code></td><td>指定したユーザーIDにモデレーター権限を付与します。</td><td>サミット以上</td></tr>
+            <tr><td><code>/summit &lt;ID&gt;</code></td><td>指定したユーザーIDにサミット権限を付与します。</td><td>運営以上</td></tr>
+            <tr><td><code>/operator &lt;ID&gt;</code></td><td>運営権限はコマンドでは付与できません。</td><td>なし</td></tr>
+            <tr><td><code>/disspeaker &lt;ID&gt;</code></td><td>指定したユーザーIDのスピーカー権限を解除します。</td><td>マネージャー以上</td></tr>
+            <tr><td><code>/dismanager &lt;ID&gt;</code></td><td>指定したユーザーIDのマネージャー権限を解除します。</td><td>モデレーター以上</td></tr>
+            <tr><td><code>/dismoderator &lt;ID&gt;</code></td><td>指定したユーザーIDのモデレーター権限を解除します。</td><td>サミット以上</td></tr>
+            <tr><td><code>/dissummit &lt;ID&gt;</code></td><td>指定したユーザーIDのサミット権限を解除します。</td><td>運営以上</td></tr>
+            <tr><td><code>/disoperator &lt;ID&gt;</code></td><td>運営権限はコマンドでは解除できません。</td><td>なし</td></tr>
+            <tr><td><code>/disself</code></td><td>自身の権限を青ID（一般ユーザー）にリセットします。</td><td>スピーカー以上</td></tr>
+            <tr><td><code>/add &lt;文字&gt;</code></td><td>自分の投稿IDの横に任意の文字列を追加します。</td><td>スピーカー以上</td></tr>
+            <tr><td><code>/destroy &lt;文字&gt;</code></td><td>指定した文字列を含む全ての投稿を削除します。</td><td>マネージャー以上</td></tr>
+            <tr><td><code>/NG &lt;ワード&gt;</code></td><td>指定したワードをNGワードリストに追加します。</td><td>モデレーター以上</td></tr>
+            <tr><td><code>/OK &lt;ワード&gt;</code></td><td>指定したワードをNGワードリストから削除します。</td><td>モデレーター以上</td></tr>
+            <tr><td><code>/prevent</code></td><td>全ての青IDユーザーの投稿を完全に禁止します。</td><td>マネージャー以上</td></tr>
+            <tr><td><code>/permit</code></td><td><code>/prevent</code>による投稿禁止を解除します。</td><td>マネージャー以上</td></tr>
+            <tr><td><code>/restrict</code></td><td>青ID（一般ユーザー）の投稿を制限します。</td><td>マネージャー以上</td></tr>
+            <tr><td><code>/stop</code></td><td>3分間、青IDユーザーの投稿を一時的に禁止します。</td><td>モデレーター以上</td></tr>
+            <tr><td><code>/prohibit &lt;分&gt;</code></td><td>指定した分数の間、青IDユーザーの投稿を禁止します。例: <code>/prohibit 10</code></td><td>モデレーター以上</td></tr>
+            <tr><td><code>/release</code></td><td>全ての投稿規制（<code>/prevent</code>, <code>/restrict</code>, <code>/stop</code>, <code>/prohibit</code>）を解除します。</td><td>マネージャー以上</td></tr>
+            <tr><td><code>/kill &lt;ID&gt;</code></td><td>指定したユーザーアカウントを使用不能にします。（仮実装）</td><td>運営以上</td></tr>
+            <tr><td><code>/ban &lt;IP/投稿番号&gt;</code></td><td>IPアドレスまたは投稿番号でユーザーをBANします。（仮実装）</td><td>運営以上</td></tr>
+            <tr><td><code>/revive</code></td><td><code>/kill</code>, <code>/ban</code>による制限を解除します。（仮実装）</td><td>運営以上</td></tr>
+            <tr><td><code>/reduce</code></td><td>権限全体の2%を削除します。（仮実装）</td><td>運営以上</td></tr>
+            <tr><td><code>/color &lt;色コード&gt; [ID]</code></td><td>自分の名前の色を変更します。ID指定で他ユーザーも可能。例: <code>/color #FF00FF</code> または <code>/color blue A1B2C3D</code></td><td>スピーカー以上</td></tr>
+            <tr><td><code>/instances</code></td><td>インスタンスを登録/閲覧します。（仮実装）</td><td>スピーカー以上</td></tr>
+            <tr><td><code>/max &lt;数&gt;</code></td><td>掲示板に表示する投稿数の上限を設定します。例: <code>/max 50</code></td><td>マネージャー以上</td></tr>
+            <tr><td><code>/range</code></td><td>表示投稿数を変更します。（仮実装）</td><td>マネージャー以上</td></tr>
+        </tbody>
+    </table>
+
+    <h2>権限について</h2>
+    <ul>
+        <li><strong>青ID (Normal)</strong>: 初期状態のユーザーです。一般的な投稿が可能です。</li>
+        <li><strong>スピーカー (Speaker)</strong>: <code>/del</code>, <code>/add</code>, <code>/color</code>, <code>/instances</code>, <code>/disself</code> コマンドが利用できます。</li>
+        <li><strong>マネージャー (Manager)</strong>: スピーカーの権限に加え、<code>/clear</code>, <code>/speaker</code>, <code>/destroy</code>, <code>/prevent</code>, <code>/permit</code>, <code>/restrict</code>, <code>/release</code>, <code>/max</code> コマンドが利用できます。</li>
+        <li><strong>モデレーター (Moderator)</strong>: マネージャーの権限に加え、<code>/topic</code>, <code>/manager</code>, <code>/NG</code>, <code>/OK</code>, <code>/stop</code>, <code>/prohibit</code> コマンドが利用できます。</li>
+        <li><strong>サミット (Summit)</strong>: モデレーターの権限に加え、<code>/moderator</code> コマンドが利用できます。</li>
+        <li><strong>運営 (Operator)</strong>: 全てのコマンドが利用できる最高権限です。</li>
+    </ul>
+
+    <p>快適な掲示板利用をお楽しみください！</p>
+</body>
+</html>

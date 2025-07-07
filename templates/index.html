@@ -1,49 +1,48 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>掲示板</title>
+<title>シンプル掲示板</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet"> {/* Google Fontsを追加 */}
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
 <style>
-/* 基本フォントとレイアウト */
 body {
-    font-family: 'Noto Sans JP', 'Roboto', sans-serif; /* 読みやすいフォントを追加 */
-    line-height: 1.7; /* 行間を少し広く */
+    font-family: 'Noto Sans JP', 'Roboto', sans-serif;
+    line-height: 1.7;
     margin: 0;
     padding: 20px;
-    background-color: #f0f2f5; /* より落ち着いた背景色 */
+    background-color: #f0f2f5;
     color: #333;
     display: flex;
     flex-direction: column;
     align-items: center;
-    -webkit-font-smoothing: antialiased; /* フォントのアンチエイリアシング */
+    -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
-.container { /* コンテンツの最大幅を設定 */
+.container {
     max-width: 960px;
     width: 100%;
     background-color: #ffffff;
-    padding: 30px; /* パディングを少し増やす */
-    border-radius: 12px; /* 角丸を強調 */
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); /* 影を深く */
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
     box-sizing: border-box;
-    margin-bottom: 20px; /* 各セクション間の余白 */
+    margin-bottom: 20px;
 }
 
-.card { /* 新しくカードスタイルのクラスを定義 */
+.card {
     background-color: #ffffff;
     padding: 25px;
     border-radius: 10px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05); /* カードごとの影 */
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
     margin-bottom: 25px;
 }
 
 h1, h2, h3 {
-    font-weight: 700; /* 太字を強調 */
+    font-weight: 700;
     color: #2c3e50;
     margin-bottom: 15px;
-    letter-spacing: -0.5px; /* 文字間を少し詰める */
+    letter-spacing: -0.5px;
 }
 
 h1 { font-size: 2.5em; }
@@ -51,7 +50,7 @@ h2 { font-size: 1.8em; }
 h3 { font-size: 1.4em; }
 
 a {
-    color: #007bff; /* アクセントカラーを統一 */
+    color: #007bff;
     text-decoration: none;
     transition: color 0.2s ease-in-out;
 }
@@ -60,7 +59,6 @@ a:hover {
     text-decoration: underline;
 }
 
-/* グラデーションテキストのスタイル */
 .example4 {
     background: linear-gradient(
     to right,
@@ -78,8 +76,8 @@ a:hover {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     display: inline-block;
-    font-size: 3em; /* グラデーションタイトルを大きく */
-    font-weight: 900; /* さらに太く */
+    font-size: 3em;
+    font-weight: 900;
     margin-bottom: 20px;
 }
 @keyframes example4 {
@@ -88,7 +86,6 @@ background-position: 200%;
 }
 }
 
-/* ダークモードの基本スタイル */
 body.dark {
     background-color: #1a1a1a;
     color: #e0e0e0;
@@ -118,9 +115,9 @@ body.dark select
 }
 body.dark input:focus,
 body.dark textarea:focus {
-    border-color: #8cceff; /* フォーカス時の色 */
+    border-color: #8cceff;
     outline: none;
-    box-shadow: 0 0 0 3px rgba(140, 206, 255, 0.3); /* フォーカス時の影 */
+    box-shadow: 0 0 0 3px rgba(140, 206, 255, 0.3);
 }
 body.dark button {
     background-color: #555;
@@ -129,36 +126,35 @@ body.dark button:hover {
     background-color: #6a6a6a;
 }
 body.dark a {
-    color: #78d2ff; /* 明るい青 */
+    color: #78d2ff;
 }
 body.dark a:hover {
     color: #a0e0ff;
 }
 
 
-/* 投稿テーブルのスタイル調整 */
 table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
     margin-top: 20px;
-    border-radius: 10px; /* テーブル全体に角丸 */
+    border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05); /* テーブルに影 */
-    background-color: #ffffff; /* ライトモードのテーブル背景 */
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    background-color: #ffffff;
 }
 th, td {
-    border: 1px solid #e9ecef; /* 各セルの枠線 */
-    padding: 14px 18px; /* パディングを増やす */
+    border: 1px solid #e9ecef;
+    padding: 14px 18px;
     text-align: left;
     vertical-align: top;
     font-size: 0.95em;
 }
 th {
-    background-color: #eef2f7; /* ヘッダーの背景色 */
+    background-color: #eef2f7;
     color: #495057;
     font-weight: 700;
-    text-transform: uppercase; /* 大文字にする */
+    text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
@@ -171,27 +167,26 @@ body.dark td {
     background-color: #333;
     border-color: #555;
 }
-body.dark tr:nth-child(even) td { /* 偶数行の背景色（ダークモード） */
+body.dark tr:nth-child(even) td {
     background-color: #3a3a3a;
 }
-body.dark tr:nth-child(odd) td { /* 奇数行の背景色（ダークモード） */
+body.dark tr:nth-child(odd) td {
     background-color: #333;
 }
-body:not(.dark) tr:nth-child(even) td { /* 偶数行の背景色（ライトモード） */
-    background-color: #fbfbfc; /* わずかに異なる色 */
+body:not(.dark) tr:nth-child(even) td {
+    background-color: #fbfbfc;
 }
 
 
-/* フォーム要素の基本スタイル */
 input[type="text"],
 input[type="password"],
 textarea,
 select {
-    width: calc(100% - 24px); /* パディングとボーダーを考慮 */
+    width: calc(100% - 24px);
     padding: 12px;
     margin-bottom: 15px;
-    border: 1px solid #ced4da; /* 落ち着いたボーダー色 */
-    border-radius: 8px; /* 角丸を強調 */
+    border: 1px solid #ced4da;
+    border-radius: 8px;
     box-sizing: border-box;
     font-size: 1em;
     transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
@@ -200,43 +195,42 @@ input[type="text"]:focus,
 input[type="password"]:focus,
 textarea:focus,
 select:focus {
-    border-color: #007bff; /* フォーカス時の色 */
+    border-color: #007bff;
     outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25); /* フォーカス時の影 */
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
 }
 
 textarea {
     resize: vertical;
-    min-height: 120px; /* 最小高さを設定 */
+    min-height: 120px;
 }
 
 button[type="submit"] {
-    background-color: #28a745; /* 送信ボタンの色 */
+    background-color: #28a745;
     color: white;
-    padding: 12px 25px; /* パディングを増やす */
+    padding: 12px 25px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     font-size: 1.05em;
     font-weight: 600;
-    transition: background-color 0.3s ease, transform 0.1s ease; /* ホバーエフェクト */
-    box-shadow: 0 4px 10px rgba(40, 167, 69, 0.2); /* ボタンの影 */
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    box-shadow: 0 4px 10px rgba(40, 167, 69, 0.2);
 }
 button[type="submit"]:hover {
     background-color: #218838;
-    transform: translateY(-1px); /* 少し上に浮き上がる */
+    transform: translateY(-1px);
 }
 button[type="submit"]:active {
-    transform: translateY(0); /* クリック時に戻る */
+    transform: translateY(0);
     box-shadow: 0 2px 5px rgba(40, 167, 69, 0.2);
 }
 
 
-/* フォーム要素を横並びにするためのスタイル */
 .form-inline-group {
     display: flex;
     align-items: center;
-    gap: 15px; /* 要素間のスペースを増やす */
+    gap: 15px;
     margin-bottom: 15px;
     flex-wrap: wrap;
 }
@@ -254,7 +248,7 @@ body.dark .form-inline-group label {
     margin-bottom: 0;
 }
 #submit {
-    margin-left: auto; /* ボタンを右寄せにする */
+    margin-left: auto;
 }
 .speaker-filter {
     display: flex;
@@ -275,17 +269,17 @@ body.dark .speaker-filter {
     border-radius: 4px;
     border: 1px solid #bbb;
     vertical-align: middle;
-    appearance: none; /* デフォルトのスタイルを無効化 */
+    appearance: none;
     -webkit-appearance: none;
     background-color: #fff;
     transition: background-color 0.2s, border-color 0.2s;
 }
 .speaker-filter input[type="checkbox"]:checked {
-    background-color: #007bff; /* チェックされた色 */
+    background-color: #007bff;
     border-color: #007bff;
 }
 .speaker-filter input[type="checkbox"]:checked::before {
-    content: '✔'; /* チェックマーク */
+    content: '✔';
     display: block;
     color: white;
     font-size: 14px;
@@ -302,7 +296,6 @@ body.dark .speaker-filter input[type="checkbox"]:checked {
 }
 
 
-/* Flashメッセージのスタイル */
 .flash-message {
     padding: 15px;
     margin-bottom: 20px;
@@ -310,20 +303,20 @@ body.dark .speaker-filter input[type="checkbox"]:checked {
     margin-top: 15px;
     font-weight: 600;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    animation: fadeIn 0.5s ease-out; /* フェードインアニメーション */
+    animation: fadeIn 0.5s ease-out;
 }
 .flash-message.error {
-    background-color: #ffe0e6; /* 薄い赤 */
+    background-color: #ffe0e6;
     color: #cc0033;
     border: 1px solid #ffb3c1;
 }
 .flash-message.success {
-    background-color: #e0ffe0; /* 薄い緑 */
+    background-color: #e0ffe0;
     color: #009900;
     border: 1px solid #b3ffb3;
 }
 .flash-message.info {
-    background-color: #e0f0ff; /* 薄い青 */
+    background-color: #e0f0ff;
     color: #0066cc;
     border: 1px solid #b3e0ff;
 }
@@ -347,32 +340,30 @@ body.dark .flash-message.info {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* ユーザー名とIDの表示スタイル */
 .username-display {
     white-space: nowrap;
-    font-weight: 700; /* 名前を太字に強調 */
+    font-weight: 700;
 }
 .username-id {
     font-size: 0.85em;
     margin-left: 8px;
-    font-weight: 500; /* IDは少し軽めに */
-    opacity: 0.8; /* 少し透明度を付ける */
+    font-weight: 500;
+    opacity: 0.8;
 }
 
-/* コマンド予測変換用のスタイル */
 .command-suggestions {
-    border: 1px solid #e0e0e0; /* より控えめなボーダー */
-    max-height: 180px; /* 高さを少し増やす */
+    border: 1px solid #e0e0e0;
+    max-height: 180px;
     overflow-y: auto;
     background-color: white;
     position: absolute;
-    width: calc(100% - 60px); /* .containerのパディングを考慮 (30px*2) */
-    max-width: 900px; /* .containerのmax-width-paddingに合わせる */
+    width: calc(100% - 60px);
+    max-width: 900px;
     z-index: 10;
     display: none;
-    margin-top: -10px; /* textareaの直下に表示 */
+    margin-top: -10px;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* 影を強調 */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 body.dark .command-suggestions {
     background-color: #363636;
@@ -380,9 +371,9 @@ body.dark .command-suggestions {
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 .command-suggestion-item {
-    padding: 12px 18px; /* パディングを調整 */
+    padding: 12px 18px;
     cursor: pointer;
-    border-bottom: 1px solid #f0f0f0; /* 区切り線 */
+    border-bottom: 1px solid #f0f0f0;
     font-size: 0.95em;
 }
 body.dark .command-suggestion-item {
@@ -393,14 +384,14 @@ body.dark .command-suggestion-item {
 }
 .command-suggestion-item:hover,
 .command-suggestion-item.selected {
-    background-color: #e6f2ff; /* ホバー色 */
+    background-color: #e6f2ff;
 }
 body.dark .command-suggestion-item:hover,
 body.dark .command-suggestion-item.selected {
     background-color: #4a4a4a;
 }
 .command-suggestion-item strong {
-    color: #007bff; /* コマンド名をアクセントカラーに */
+    color: #007bff;
     font-weight: 700;
 }
 body.dark .command-suggestion-item strong {
@@ -408,7 +399,6 @@ body.dark .command-suggestion-item strong {
 }
 
 
-/* レスポンシブデザイン */
 @media (max-width: 768px) {
     body {
         padding: 10px;
@@ -431,11 +421,11 @@ body.dark .command-suggestion-item strong {
 
     .form-inline-group {
         flex-direction: column;
-        align-items: stretch; /* フォーム要素を横幅いっぱいに */
+        align-items: stretch;
         gap: 10px;
     }
     .form-inline-group label {
-        width: 100%; /* ラベルも幅いっぱいに */
+        width: 100%;
         text-align: left;
     }
     .form-inline-group input,
@@ -444,23 +434,23 @@ body.dark .command-suggestion-item strong {
         margin-left: 0;
     }
     #submit {
-        margin-top: 5px; /* 送信ボタンの上に少し余白 */
+        margin-top: 5px;
     }
     #msg {
         width: 100%;
         box-sizing: border-box;
     }
     .command-suggestions {
-        width: calc(100% - 20px); /* bodyのpaddingを考慮 */
+        width: calc(100% - 20px);
         max-width: none;
-        left: 10px; /* bodyのpaddingに合わせて調整 */
+        left: 10px;
     }
     th, td {
         padding: 10px 12px;
         font-size: 0.9em;
     }
     .username-id {
-        display: block; /* モバイルではIDを改行 */
+        display: block;
         margin-left: 0;
         margin-top: 2px;
     }
@@ -472,9 +462,14 @@ body.dark .command-suggestion-item strong {
 <a href="https://new-instance-asck.onrender.com/">Yuki Youtube</a><br>
 
 <div class="example4"><h1>掲示板</h1></div>
-</p> 
-<a href="/bbs/how" style="display: inline-block; margin-bottom: 15px;">使い方</a><br> {/* margin-bottomを追加 */}
-<select style="width: 180px; padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 1em;"> {/* selectのスタイルを調整 */}
+<p style="margin-top: -10px; margin-bottom: 20px; font-size: 1.1em; color: #555;">
+    新規さんへ、先ずは挨拶をしましょう。シード値は自分のidを決めるものでパスワードのようなものです。<br>
+    今の話題に勇気を出して参加してみましょう!!!<br>
+    メッセージが送れない場合はメッセージや名前が規制されている可能性があります。<br>
+    現在の推定オンライン数は不明です。
+</p>
+<a href="/bbs/how" style="display: inline-block; margin-bottom: 15px;">使い方</a><br>
+<select style="width: 180px; padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 1em;">
 <option>雑談</option>
 <option>バトルスタジアム</option>
 </select><br>
@@ -487,11 +482,10 @@ body.dark .command-suggestion-item strong {
   {% endif %}
 {% endwith %}
 
-<div class="card"> 
-    <h2>新規投稿</h2> 
+<div class="card">
+    <h2>新規投稿</h2>
     <form action="/post" method="POST" id="postForm">
-        <label for="msg"></label> 
-        <span style="font-weight: 600; color: #555; display: block; margin-bottom: 5px;">メッセージ</span> 
+        <span style="font-weight: 600; color: #555; display: block; margin-bottom: 5px;">メッセージ</span>
         <textarea
         name="message"
         rows="6"
@@ -525,11 +519,11 @@ body.dark .command-suggestion-item strong {
     スピーカー以上のメッセージのみ表示<input type="checkbox">
 </div>
 
-<div class="card"> 
-    <h2>投稿リスト</h2> 
+<div class="card">
+    <h2>投稿リスト</h2>
     <h3>現在の話題：<font color="red"><span id="current-topic-display">{{ current_topic }}</span></font></h3>
 
-    <table> 
+    <table>
         <thead>
             <tr>
                 <th>No</th>
@@ -538,7 +532,7 @@ body.dark .command-suggestion-item strong {
             </tr>
         </thead>
         <tbody id="posts-table-body">
-           
+            {% for post in posts %}
             <tr>
                 <td>{{ post.id }}</td>
                 <td>
@@ -563,7 +557,7 @@ body.dark .command-suggestion-item strong {
             {% endfor %}
         </tbody>
     </table>
-</div> 
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
 <script>
@@ -576,10 +570,8 @@ body.dark .command-suggestion-item strong {
         const postsTableBody = document.getElementById('posts-table-body');
         const currentTopicDisplay = document.getElementById('current-topic-display');
 
-        // === Socket.IO クライアントの初期化 ===
         const socket = io();
 
-        // === Socket.IO イベントリスナー ===
         socket.on('update_posts', function(data) {
             console.log('Received update_posts:', data);
             renderPosts(data.posts);
@@ -618,7 +610,6 @@ body.dark .command-suggestion-item strong {
         });
 
 
-        // === localStorageによる入力値保持 ===
         if (!nameInput.value) {
             const savedName = localStorage.getItem('savedName');
             if (savedName) {
@@ -636,7 +627,6 @@ body.dark .command-suggestion-item strong {
             localStorage.setItem('savedSeed', seedInput.value);
         });
 
-        // === コマンド予測変換のロジック ===
         const availableCommands = [
             { cmd: '/del', desc: '投稿を削除 (例: /del 1 2)' },
             { cmd: '/clear', desc: '全ての投稿を削除し番号をリセット' },
@@ -716,20 +706,18 @@ body.dark .command-suggestion-item strong {
                 return;
             }
 
-            // コマンド予測変換の位置をtextareaに合わせる
             const textareaRect = msgInput.getBoundingClientRect();
             const containerRect = document.querySelector('.container').getBoundingClientRect();
-            commandSuggestionsDiv.style.top = `${textareaRect.bottom - containerRect.top + 5}px`; /* textareaの直下に表示 */
+            commandSuggestionsDiv.style.top = `${textareaRect.bottom - containerRect.top + 5}px`;
             commandSuggestionsDiv.style.left = `${textareaRect.left - containerRect.left}px`;
-            commandSuggestionsDiv.style.width = `${textareaRect.width}px`; /* textareaと同じ幅 */
+            commandSuggestionsDiv.style.width = `${textareaRect.width}px`;
 
 
             suggestions.forEach((suggestion, index) => {
                 const item = document.createElement('div');
                 item.classList.add('command-suggestion-item');
                 item.innerHTML = `<strong>${suggestion.cmd}</strong> - ${suggestion.desc}`;
-                
-                item.addEventListener('click', function() {
+   item.addEventListener('click', function() {
                     msgInput.value = suggestion.cmd + ' ';
                     hideSuggestions();
                     msgInput.focus();
@@ -738,7 +726,8 @@ body.dark .command-suggestion-item strong {
             });
             commandSuggestionsDiv.style.display = 'block';
         }
-function hideSuggestions() {
+
+        function hideSuggestions() {
             commandSuggestionsDiv.style.display = 'none';
             commandSuggestionsDiv.innerHTML = '';
             selectedSuggestionIndex = -1;
@@ -770,7 +759,6 @@ function hideSuggestions() {
         });
 
 
-        // === 投稿のレンダリング関数 (WebSocketイベントで使用) ===
         function renderPosts(posts) {
             let html = '';
             if (posts.length === 0) {
@@ -802,7 +790,6 @@ function hideSuggestions() {
         }
     });
 </script>
-</div> {/* .containerを閉じるタグ */}
+</div>
 </body>
 </html>
-  

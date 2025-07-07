@@ -214,8 +214,7 @@ body.dark .command-suggestion-item.selected {
         </tr>
     </thead>
     <tbody id="posts-table-body">
-        {# ここに投稿データがJavaScriptで動的に挿入されます #}
-        {# 初回ロード時はPythonから渡されたデータがここに表示されるが、その後の更新はJSで行う #}
+        {# 初回ロード時はPythonから渡されたデータがここに表示される #}
         {% for post in posts %}
         <tr>
             <td>{{ post.id }}</td>
@@ -240,6 +239,7 @@ body.dark .command-suggestion-item.selected {
     </tbody>
 </table>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script> {# Socket.IOクライアントライブラリを読み込む #}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const nameInput = document.getElementById('name');
@@ -247,8 +247,65 @@ body.dark .command-suggestion-item.selected {
         const postForm = document.getElementById('postForm');
         const msgInput = document.getElementById('msg');
         const commandSuggestionsDiv = document.getElementById('commandSuggestions');
-        const postsTableBody = document.getElementById('posts-table-body'); // 投稿表示部分のtbody
-        const currentTopicDisplay = document.getElementById('current-topic-display'); // 話題表示部分
+        const postsTableBody = document.getElementById('posts-table-body');
+        const currentTopicDisplay = document.getElementById('current-topic-display');
+
+        // === Socket.IO クライアントの初期化 ===
+        // 開発環境ではポートも指定
+        const socket = io(); // 本番環境では io() のみでOK
+
+        // === Socket.IO イベントリスナー ===
+
+        // 投稿とトピックの更新イベントを受け取ったとき
+        socket.on('update_posts', function(data) {
+            console.log('Received update_posts:', data);
+            renderPosts(data.posts);
+            currentTopicDisplay.textContent = data.current_topic;
+        });
+
+        // 投稿が削除されたとき（/del コマンド）
+        socket.on('post_deleted', function(data) {
+            console.log('Received post_deleted:', data);
+            // 投稿リスト全体を再取得してレンダリングすることで同期
+            // より高度な実装では、削除されたIDに対応する行のみをDOMから削除する
+            socket.emit('request_posts_update'); // サーバーに最新の投稿リストを要求
+        });
+
+        // 全投稿がクリアされたとき（/clear コマンド）
+        socket.on('posts_cleared', function() {
+            console.log('Received posts_cleared');
+            postsTableBody.innerHTML = '<tr><td colspan="3">まだ投稿がありません。</td></tr>';
+            socket.emit('request_posts_update'); // サーバーに最新の投稿リストを要求
+        });
+
+        // 話題が更新されたとき（/topic コマンド）
+        socket.on('topic_updated', function(data) {
+            console.log('Received topic_updated:', data);
+            currentTopicDisplay.textContent = data.topic;
+        });
+
+        // 権限が更新されたとき（/speaker, /disspeaker など）
+        socket.on('roles_updated', function(data) {
+            console.log('Received roles_updated:', data);
+            // 権限更新時は、投稿者の名前やIDの色が変わる可能性があるため、
+            // 全投稿を再レンダリングするのが最も確実です。
+            socket.emit('request_posts_update');
+        });
+
+        // ユーザーサフィックスが更新されたとき（/add コマンド）
+        socket.on('user_suffix_updated', function(data) {
+            console.log('Received user_suffix_updated:', data);
+            // サフィックスが変更された場合も、投稿者の表示が変わるため
+            socket.emit('request_posts_update');
+        });
+
+        // クライアントからサーバーに最新の投稿リストを要求するイベント（Helper）
+        // これにより、任意のイベント受信時に最新データを取得できる
+        socket.on('connect', () => {
+            console.log('Connected to Socket.IO server');
+            socket.emit('request_posts_update');
+        });
+
 
         // === localStorageによる入力値保持 ===
         if (!nameInput.value) {
@@ -395,9 +452,7 @@ body.dark .command-suggestion-item.selected {
         });
 
 
-        // === 自動更新のロジック ===
-
-        // 投稿をレンダリングする関数
+        // === 投稿のレンダリング関数 (WebSocketイベントで使用) ===
         function renderPosts(posts) {
             let html = '';
             if (posts.length === 0) {
@@ -427,33 +482,6 @@ body.dark .command-suggestion-item.selected {
             }
             postsTableBody.innerHTML = html;
         }
-
-        // 投稿とトピックをサーバーから取得・更新する関数
-        async function fetchAndUpdatePosts() {
-            try {
-                const response = await fetch('/get_posts');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                
-                // 投稿テーブルを更新
-                renderPosts(data.posts);
-
-                // 話題を更新
-                currentTopicDisplay.textContent = data.current_topic;
-
-            } catch (error) {
-                console.error("Error fetching posts:", error);
-                // 必要であれば、ユーザーにエラーを通知するUIを追加
-            }
-        }
-
-        // ページロード時に一度更新
-        fetchAndUpdatePosts();
-
-        // 5秒ごとに自動更新
-        setInterval(fetchAndUpdatePosts, 5000); // 5000ミリ秒 = 5秒
     });
 </script>
 

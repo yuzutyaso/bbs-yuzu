@@ -3,7 +3,6 @@
 <head>
 <title>掲示板</title>
 <style>
-/* グラデーションテキストのスタイル */
 .example4 {
 background: linear-gradient(
 to right,
@@ -27,29 +26,29 @@ background-position: 200%;
 }
 }
 
-/* ダークモードの基本スタイル */
-body.dark {
+.dark
+{
 background-color: #111;
 color: #ddd;
 }
-body.dark input,
-body.dark textarea,
-body.dark button,
-body.dark select 
+.dark input,
+.dark textarea,
+.dark button,
+.dark select 
 {
 background-color: #111;
 color: #ddd;
 border: #ddd 1px solid;
 }
-body.dark a {
+.dark a {
 color: cyan;
 }
 
-/* 投稿テーブルの基本スタイル */
 table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
+    border: 1px solid black;
 }
 th, td {
     border: 1px solid #ccc;
@@ -59,13 +58,18 @@ th, td {
 th {
     background-color: #f2f2f2;
 }
-body.dark th { /* ダークモードのテーブルヘッダー */
+body.dark th {
     background-color: #333;
     color: #ddd;
+    border-color: #555;
+}
+body.dark td {
+    border-color: #555;
+}
+body.dark table {
+    border-color: #555;
 }
 
-
-/* フォーム要素を横並びにするためのスタイル */
 .form-inline-group {
     display: flex;
     align-items: center;
@@ -83,7 +87,6 @@ body.dark th { /* ダークモードのテーブルヘッダー */
     margin-top: 10px;
 }
 
-/* Flashメッセージのスタイル */
 .flash-message {
     padding: 10px;
     margin-bottom: 10px;
@@ -106,16 +109,14 @@ body.dark th { /* ダークモードのテーブルヘッダー */
     border: 1px solid #bee5eb;
 }
 
-/* ユーザー名とIDの表示スタイル */
 .username-display {
     white-space: nowrap;
 }
 .username-id {
-    font-size: 0.8em; /* IDを少し小さくする */
-    margin-left: 5px; /* 名前との間にスペース */
+    font-size: 0.8em;
+    margin-left: 5px;
 }
 
-/* コマンド予測変換用のスタイル */
 .command-suggestions {
     border: 1px solid #ccc;
     max-height: 150px;
@@ -154,7 +155,7 @@ body.dark .command-suggestion-item.selected {
 今の話題に勇気を出して参加してみましょう!!!<br>
 メッセージが送れない場合はメッセージや名前が規制されている可能性があります。<br>
 現在の推定オンライン数は不明です。<br>
-<a href="https://new-instance-asck.onrender.com/bbs/how">使い方</a><br>
+<a href="/bbs/how">使い方</a><br>
 <select>
 <option>雑談</option>
 <option>バトルスタジアム</option>
@@ -205,7 +206,7 @@ body.dark .command-suggestion-item.selected {
 <h2>投稿</h2>
 <h3>現在の話題：<font color="red"><span id="current-topic-display">{{ current_topic }}</span></font></h3>
 
-<table border="1">
+<table>
     <thead>
         <tr>
             <th>No</th>
@@ -214,7 +215,6 @@ body.dark .command-suggestion-item.selected {
         </tr>
     </thead>
     <tbody id="posts-table-body">
-        {# 初回ロード時はPythonから渡されたデータがここに表示される #}
         {% for post in posts %}
         <tr>
             <td>{{ post.id }}</td>
@@ -239,7 +239,7 @@ body.dark .command-suggestion-item.selected {
     </tbody>
 </table>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script> {# Socket.IOクライアントライブラリを読み込む #}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const nameInput = document.getElementById('name');
@@ -250,64 +250,38 @@ body.dark .command-suggestion-item.selected {
         const postsTableBody = document.getElementById('posts-table-body');
         const currentTopicDisplay = document.getElementById('current-topic-display');
 
-        // === Socket.IO クライアントの初期化 ===
-        // 開発環境ではポートも指定
-        const socket = io(); // 本番環境では io() のみでOK
+        const socket = io();
 
-        // === Socket.IO イベントリスナー ===
-
-        // 投稿とトピックの更新イベントを受け取ったとき
         socket.on('update_posts', function(data) {
-            console.log('Received update_posts:', data);
             renderPosts(data.posts);
             currentTopicDisplay.textContent = data.current_topic;
         });
 
-        // 投稿が削除されたとき（/del コマンド）
         socket.on('post_deleted', function(data) {
-            console.log('Received post_deleted:', data);
-            // 投稿リスト全体を再取得してレンダリングすることで同期
-            // より高度な実装では、削除されたIDに対応する行のみをDOMから削除する
-            socket.emit('request_posts_update'); // サーバーに最新の投稿リストを要求
+            socket.emit('request_posts_update');
         });
 
-        // 全投稿がクリアされたとき（/clear コマンド）
         socket.on('posts_cleared', function() {
-            console.log('Received posts_cleared');
             postsTableBody.innerHTML = '<tr><td colspan="3">まだ投稿がありません。</td></tr>';
-            socket.emit('request_posts_update'); // サーバーに最新の投稿リストを要求
+            socket.emit('request_posts_update');
         });
 
-        // 話題が更新されたとき（/topic コマンド）
         socket.on('topic_updated', function(data) {
-            console.log('Received topic_updated:', data);
             currentTopicDisplay.textContent = data.topic;
         });
 
-        // 権限が更新されたとき（/speaker, /disspeaker など）
         socket.on('roles_updated', function(data) {
-            console.log('Received roles_updated:', data);
-            // 権限更新時は、投稿者の名前やIDの色が変わる可能性があるため、
-            // 全投稿を再レンダリングするのが最も確実です。
             socket.emit('request_posts_update');
         });
 
-        // ユーザーサフィックスが更新されたとき（/add コマンド）
         socket.on('user_suffix_updated', function(data) {
-            console.log('Received user_suffix_updated:', data);
-            // サフィックスが変更された場合も、投稿者の表示が変わるため
             socket.emit('request_posts_update');
         });
 
-        // クライアントからサーバーに最新の投稿リストを要求するイベント（Helper）
-        // これにより、任意のイベント受信時に最新データを取得できる
         socket.on('connect', () => {
-            console.log('Connected to Socket.IO server');
             socket.emit('request_posts_update');
         });
 
-
-        // === localStorageによる入力値保持 ===
         if (!nameInput.value) {
             const savedName = localStorage.getItem('savedName');
             if (savedName) {
@@ -325,7 +299,6 @@ body.dark .command-suggestion-item.selected {
             localStorage.setItem('savedSeed', seedInput.value);
         });
 
-        // === コマンド予測変換のロジック ===
         const availableCommands = [
             { cmd: '/del', desc: '投稿を削除 (例: /del 1 2)' },
             { cmd: '/clear', desc: '全ての投稿を削除し番号をリセット' },
@@ -451,8 +424,6 @@ body.dark .command-suggestion-item.selected {
             event.preventDefault();
         });
 
-
-        // === 投稿のレンダリング関数 (WebSocketイベントで使用) ===
         function renderPosts(posts) {
             let html = '';
             if (posts.length === 0) {

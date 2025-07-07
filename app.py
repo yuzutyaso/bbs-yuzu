@@ -4,6 +4,7 @@ from datetime import datetime
 import os
 import hashlib
 import json
+from flask_socketio import SocketIO, emit # WebSocket用に追加
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -12,6 +13,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'your_super_secret_key_for_flask_flash_messages_change_this_in_prod'
 
 db = SQLAlchemy(app)
+socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="*") # SocketIOを初期化、CORSを許可
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -40,7 +42,7 @@ class User(db.Model):
 
 ROLES_FILE = os.path.join(basedir, 'roles.json')
 
-OPERATOR_HASHES = ["fb2bfb4", "your_operator_hash_2"]
+OPERATOR_HASHES = ["fb2bfb4", "your_operator_hash_2"] # あなたの運営アカウントのハッシュを複数記入可能
 
 ROLE_NAME_COLORS = {
     "operator": "red",
@@ -173,7 +175,6 @@ def get_formatted_posts():
             'name': display_name,
             'display_id': display_id,
             'message': post.message,
-            # 日付をJavaScriptで扱いやすい形式に変換 (ISOフォーマット)
             'created_at': post.created_at.isoformat(), 
             'name_color': name_color_for_html,
             'id_color': id_color_for_html,
@@ -196,19 +197,19 @@ def index():
                            prev_message=request.args.get('prev_message', ''),
                            prev_seed=request.args.get('prev_seed', ''))
 
-# === 新しいエンドポイント: 投稿データをJSONで返す ===
-@app.route('/get_posts')
-def get_posts():
-    posts_for_display = get_formatted_posts()
-    current_topic = Topic.query.first()
-    current_topic_content = current_topic.content if current_topic else "今の話題：設定されていません"
+# /get_posts エンドポイントはWebSocketを使う場合は不要になりますが、
+# 初回ロード時のデータ取得やデバッグ用に残しておくことも可能です。
+# @app.route('/get_posts')
+# def get_posts():
+#     posts_for_display = get_formatted_posts()
+#     current_topic = Topic.query.first()
+#     current_topic_content = current_topic.content if current_topic else "今の話題：設定されていません"
     
-    return jsonify({
-        'posts': posts_for_display,
-        'current_topic': current_topic_content
-    })
+#     return jsonify({
+#         'posts': posts_for_display,
+#         'current_topic': current_topic_content
+#     })
 
-# /post ルート (変更なし)
 @app.route('/post', methods=['POST'])
 def post():
     global global_roles_data
@@ -269,6 +270,7 @@ def post():
                 global_roles_data.setdefault(target_list_name, []).append(target_id)
                 save_roles(global_roles_data)
                 flash(f"ID '{target_id}' に {target_role_name} 権限を付与しました。", 'success')
+                socketio.emit('roles_updated', {'id': target_id, 'role': target_role_name}) # WebSocketイベント発行
             else:
                 flash(f"ID '{target_id}' は既に {target_role_name} 権限を持っています。", 'info')
             return redirect(url_for('index'))
@@ -301,6 +303,7 @@ def post():
                 global_roles_data[target_list_name].remove(target_id)
                 save_roles(global_roles_data)
                 flash(f"ID '{target_id}' から {target_role_name} 権限を降格しました。", 'success')
+                socketio.emit('roles_updated', {'id': target_id, 'role': 'blue_id'}) # WebSocketイベント発行 (権限降格の場合はblue_idに)
             else:
                 flash(f"ID '{target_id}' は {target_role_name} 権限を持っていません。", 'info')
             return redirect(url_for('index'))
@@ -319,6 +322,7 @@ def post():
             if removed_from_any_role:
                 save_roles(global_roles_data)
                 flash("あなたの権限を青IDにリセットしました。", 'success')
+                socketio.emit('roles_updated', {'id': user_hash, 'role': 'blue_id'}) # WebSocketイベント発行
             else:
                 flash("あなたは既に青IDまたはデフォルト権限です。", 'info')
             return redirect(url_for('index'))
@@ -343,6 +347,7 @@ def post():
 
             db.session.commit()
             flash(f"ID '{user_hash}' の後ろに '{suffix_text}' (マゼンタ) を設定しました。", 'success')
+            socketio.emit('user_suffix_updated', {'id': user_hash, 'suffix_text': suffix_text, 'suffix_color': 'magenta'}) # WebSocketイベント発行
             return redirect(url_for('index'))
 
         elif command == '/del':
@@ -350,14 +355,15 @@ def post():
                 flash(f"コマンド '{command}' を実行する権限がありません。", 'error')
                 return redirect(url_for('index'))
             
-            del_ids = command_arg.split()
+            del_ids = []
             deleted_count = 0
             feedback_message_detail = []
-            for post_id_str in del_ids:
+            for post_id_str in command_arg.split(): # 複数ID対応
                 try:
                     post_id = int(post_id_str)
                     post_to_delete = Post.query.get(post_id)
                     if post_to_delete:
+                        del_ids.append(post_id) # 削除対象IDをリストに格納
                         db.session.delete(post_to_delete)
                         deleted_count += 1
                     else:
@@ -365,10 +371,14 @@ def post():
                 except ValueError:
                     feedback_message_detail.append(f"無効な投稿番号: {post_id_str}")
             db.session.commit()
+
             if deleted_count > 0:
                 flash(f"{deleted_count}件の投稿を削除しました。<br>" + "<br>".join(feedback_message_detail), 'success')
+                socketio.emit('post_deleted', {'ids': del_ids}) # 削除イベント発行
             else:
                 flash("<br>".join(feedback_message_detail) or "指定された投稿は削除されませんでした。", 'info')
+            return redirect(url_for('index'))
+
         elif command == '/clear':
             if not has_permission(executor_role, 'moderator'):
                 flash(f"コマンド '{command}' を実行する権限がありません。", 'error')
@@ -380,9 +390,12 @@ def post():
                 db.session.execute(db.text("UPDATE sqlite_sequence SET seq = 0 WHERE name = 'post'"))
                 db.session.commit()
                 flash(f"{num_rows_deleted}件の全ての投稿を削除し、投稿番号をリセットしました。", 'success')
+                socketio.emit('posts_cleared') # 全削除イベント発行
             except Exception as e:
                 db.session.rollback()
                 flash(f"全ての投稿の削除中にエラーが発生しました: {e}", 'error')
+            return redirect(url_for('index'))
+
         elif command == '/topic':
             if not has_permission(executor_role, 'manager'):
                 flash(f"コマンド '{command}' を実行する権限がありません。", 'error')
@@ -400,22 +413,43 @@ def post():
                         db.session.add(new_topic)
                         db.session.commit()
                         flash(f"話題を「{command_arg}」に新規設定しました。", 'success')
+                    socketio.emit('topic_updated', {'topic': command_arg}) # 話題更新イベント発行
                 except Exception as e:
                     db.session.rollback()
                     flash(f"話題の変更中にエラーが発生しました: {e}", 'error')
             else:
                 flash("/topic (話題にしたい内容) の形式で入力してください。", 'error')
+            return redirect(url_for('index'))
+            
         else:
             flash(f"不明なコマンド: {command}", 'error')
-
-        return redirect(url_for('index'))
+            return redirect(url_for('index'))
 
     final_username_to_save = f"{raw_username}@{display_hash}"
     new_post = Post(username=final_username_to_save, message=message)
     db.session.add(new_post)
     db.session.commit()
     flash('投稿が完了しました！', 'success')
+    
+    # WebSocketイベントを発行してクライアントに新しい投稿を通知
+    # ここでは、最新の投稿リスト全体を再度送信します。
+    # より効率的な方法としては、追加された投稿のみを送信することも可能ですが、
+    # 状態の同期をシンプルにするため、今回は全件送信を選択します。
+    socketio.emit('update_posts', {'posts': get_formatted_posts(), 'current_topic': Topic.query.first().content})
+    
     return redirect(url_for('index'))
 
+# === SocketIO イベントハンドラ ===
+@socketio.on('connect')
+def test_connect():
+    print('Client connected')
+    # 接続時に最新の投稿とトピックを送信して初期表示を同期
+    emit('update_posts', {'posts': get_formatted_posts(), 'current_topic': Topic.query.first().content})
+
+@socketio.on('disconnect')
+def test_disconnect():
+    print('Client disconnected')
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Flaskの通常のrun()ではなく、socketio.run()を使用
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True) # allow_unsafe_werkzeugは開発用
